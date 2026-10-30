@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Deal-Alarm</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">🔔 Deal-Alarm <span class="muted">expert &amp; Euronics</span></div>
+  <div class="status" id="status">…</div>
+  <div class="actions">
+    <button id="btn-check-all" class="primary">Alle jetzt prüfen</button>
+    <button id="btn-settings">Einstellungen</button>
+  </div>
+</header>
+
+<main>
+  <section class="toolbar">
+    <h1>Watchlist</h1>
+    <button id="btn-add" class="primary">+ Gerät hinzufügen</button>
+  </section>
+  <div id="watches" class="grid"></div>
+  <p id="empty" class="empty hidden">Noch keine Geräte. Füge eins hinzu – bei einem Treffer zum Wunschpreis kommt ein Dealalarm per ntfy.</p>
+</main>
+
+<!-- Gerät anlegen / bearbeiten -->
+<dialog id="watch-dialog">
+  <form id="watch-form" method="dialog">
+    <h2 id="watch-dialog-title">Gerät hinzufügen</h2>
+    <input type="hidden" name="id">
+    <div class="row">
+      <label>Name<input name="name" placeholder="z. B. AirPods Pro 3" required></label>
+      <label>Wunschpreis (€)<input name="target_price" inputmode="decimal" placeholder="199,00" required></label>
+    </div>
+
+    <fieldset>
+      <legend><label class="inline"><input type="checkbox" name="expert_enabled" checked> expert</label></legend>
+      <label>Produkt-URL, Webcode oder Suchbegriff
+        <div class="search-row">
+          <input name="expert_query" placeholder="https://www.expert.de/shop/unsere-produkte/…html">
+          <button type="button" id="btn-expert-search">Suchen</button>
+        </div>
+      </label>
+      <ul id="expert-results" class="results hidden"></ul>
+      <label class="inline"><input type="checkbox" name="expert_all_branches" checked> Alle Filialen durchsuchen (versandfähige Angebote)</label>
+      <label class="inline"><input type="checkbox" name="expert_include_display"> Ausstellungsstücke berücksichtigen</label>
+      <label class="inline"><input type="checkbox" name="expert_include_local"> Auch nur lokal verfügbare Angebote</label>
+      <label class="narrow">Max. Entfernung (km, PLZ in den Einstellungen)<input name="expert_max_distance" inputmode="numeric" value="50"></label>
+    </fieldset>
+
+    <fieldset>
+      <legend><label class="inline"><input type="checkbox" name="euronics_enabled" checked> Euronics</label></legend>
+      <label>Produkt-URL oder Suchbegriff
+        <input name="euronics_query" placeholder="https://www.euronics.de/… (leer = Suche über EAN)">
+      </label>
+      <label>EAN <span class="muted">(wird bei expert automatisch übernommen)</span>
+        <input name="ean" inputmode="numeric" placeholder="0195950543742">
+      </label>
+    </fieldset>
+
+    <label class="inline"><input type="checkbox" name="enabled" checked> Überwachung aktiv</label>
+    <p id="watch-error" class="error"></p>
+    <div class="dialog-actions">
+      <button type="button" data-close>Abbrechen</button>
+      <button type="submit" class="primary">Speichern</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Einstellungen -->
+<dialog id="settings-dialog">
+  <form id="settings-form" method="dialog">
+    <h2>Einstellungen</h2>
+    <fieldset>
+      <legend>ntfy</legend>
+      <div class="row">
+        <label>Server<input name="ntfy_server" placeholder="https://ntfy.sh"></label>
+        <label>Topic<input name="ntfy_topic" placeholder="mein-geheimes-dealalarm-topic" required></label>
+      </div>
+      <div class="row">
+        <label>Access-Token <span class="muted">(optional)</span><input name="ntfy_token" type="password" autocomplete="off"></label>
+        <label>Priorität
+          <select name="ntfy_priority">
+            <option value="1">1 – min</option><option value="2">2 – niedrig</option><option value="3">3 – normal</option>
+            <option value="4">4 – hoch</option><option value="5">5 – dringend</option>
+          </select>
+        </label>
+      </div>
+      <button type="button" id="btn-test-notify">Testnachricht senden</button>
+      <span id="test-result" class="muted"></span>
+    </fieldset>
+    <fieldset>
+      <legend>Zeitplan</legend>
+      <label class="inline"><input type="checkbox" name="scheduler_enabled"> Automatisch prüfen</label>
+      <div class="row">
+        <label>Intervall (Minuten)<input name="interval_minutes" inputmode="numeric"></label>
+        <label>Zufallsabweichung ± (Minuten)<input name="jitter_minutes" inputmode="numeric"></label>
+      </div>
+      <label class="narrow">Deine PLZ <span class="muted">(für lokale expert-Angebote)</span><input name="plz" inputmode="numeric" maxlength="5"></label>
+    </fieldset>
+    <p id="settings-error" class="error"></p>
+    <div class="dialog-actions">
+      <button type="button" data-close>Abbrechen</button>
+      <button type="submit" class="primary">Speichern</button>
+    </div>
+  </form>
+</dialog>
+
+<template id="watch-template">
+  <article class="card">
+    <div class="card-head">
+      <div>
+        <h3 class="name"></h3>
+        <div class="target muted"></div>
+      </div>
+      <span class="badge paused hidden">pausiert</span>
+    </div>
+    <div class="shops"></div>
+    <div class="card-actions">
+      <button data-action="check">Jetzt prüfen</button>
+      <button data-action="toggle"></button>
+      <button data-action="edit">Bearbeiten</button>
+      <button data-action="delete" class="danger">Löschen</button>
+    </div>
+  </article>
+</template>
+
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
