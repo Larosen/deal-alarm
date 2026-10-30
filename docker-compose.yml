@@ -1,0 +1,13 @@
+services:
+  deal-alarm:
+    build: .
+    container_name: deal-alarm
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data:/data
+    environment:
+      TZ: Europe/Berlin
+      # Optionaler Passwortschutz der Weboberfläche (Benutzer: admin)
+      # UI_PASSWORD: geheim
