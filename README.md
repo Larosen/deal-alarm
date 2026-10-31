@@ -15,7 +15,11 @@ und durchsucht auf Wunsch alle expert-Filialen inkl. Direktabzug/Aktionspreis un
   - **jede Filiale wird einzeln abgefragt** – jede Niederlassung hat ihre eigenen Preise
   - Vergleichstabelle „Alle Filialpreise“ mit Preis, Versand, Gesamtpreis, Bestand und Prüfzeitpunkt
   - optional Ausstellungsstücke und nur lokal verfügbare Angebote im Umkreis deiner PLZ
-- **Euronics**: Produkt-URL oder Suche über die EAN (die EAN wird automatisch von expert übernommen)
+- **Euronics & media@home**: Onlineshop und **jeder Markt einzeln**
+  - Produkt-URL (Onlineshop oder ein Markt) oder Suche über die EAN (wird automatisch übernommen)
+  - Märkte als Liste in den Einstellungen, z. B. `https://www.euronics.de/hamburg-buddenhagen`
+    oder `https://www.mediaathome.de/hamburg-badje-ott` (aus der Händlersuche unter „weitere Details“)
+  - eigenes Rate-Limit pro Domain (euronics.de und mediaathome.de)
 - Zeitplan mit einstellbarem Intervall (Standard 120 Min.) und Zufallsabweichung (Standard ± 10 Min.)
 - ntfy mit eigenem Server, Topic, optionalem Access-Token und Priorität; Testnachricht-Button
 - Kein Benachrichtigungs-Spam: Pro Gerät und Shop gibt es einen Alarm, wenn der Wunschpreis erreicht wird.
@@ -82,9 +86,13 @@ Der Dealalarm enthält Gerät, Preis, Wunschpreis und Filiale. Ein Tipp auf die 
   wird das am Gerät angezeigt, ohne dass die expert-Prüfung darunter leidet.
 - Der Euronics-Preis wird aus den strukturierten Produktdaten der Seite (schema.org/JSON-LD bzw.
   Meta-Tags) gelesen. Liefert die EAN-Suche kein eindeutiges Produkt, bitte die direkte Produkt-URL eintragen.
-- **Euronics-Marktpreise:** Derzeit wird bei Euronics nur der Onlinepreis abgefragt. Der Filial-Scanner
-  inkl. Rate-Limit ist vorbereitet; es fehlt noch, wie euronics.de den Preis eines bestimmten Markts
-  ausliefert – dafür wird ein Mitschnitt der Browser-Anfrage beim Wechsel des Markts benötigt.
+- **Euronics-Märkte:** Jeder Markt hat einen eigenen Shop. Die URL eines Produkts im Markt ist
+  `<markt-url>/<produktpfad>`, der Produktpfad ist überall gleich und endet mit der EAN. Führt ein Markt das
+  Produkt nicht (404 oder Weiterleitung aus dem Markt heraus), gilt es dort als nicht verfügbar.
+  Händler mit mehreren Filialen (z. B. Buddenhagen) haben meist einen gemeinsamen Shop – ein Eintrag genügt.
+- Bei Euronics werden keine Versandkosten ausgelesen; verglichen wird der Artikelpreis.
+- Die Marktliste wird derzeit von Hand gepflegt. Ein automatischer Import aus der Händlersuche ist möglich,
+  sobald bekannt ist, woher die Karte ihre Daten lädt.
 - Eine Prüfung über alle expert-Filialen dauert ca. eine Minute pro Gerät. Bitte das Intervall nicht zu
   klein wählen (Minimum 15 Minuten), damit die Shops nicht unnötig belastet werden.
 

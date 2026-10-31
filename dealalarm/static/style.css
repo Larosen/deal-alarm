@@ -101,7 +101,7 @@ legend { font-weight: 600; padding: 0 4px; }
 label { display: flex; flex-direction: column; gap: 4px; font-size: .9em; flex: 1; }
 label.inline { flex-direction: row; align-items: center; gap: 8px; }
 label.narrow { max-width: 320px; }
-input, select {
+input, select, textarea {
   font: inherit; padding: 7px 9px; border-radius: 8px; border: 1px solid var(--border);
   background: var(--bg); color: var(--text); width: 100%;
 }
@@ -138,3 +138,6 @@ table.stores tr.nomatch { opacity: .55; }
 table.stores tr.stale td { font-style: italic; }
 table.stores a { color: inherit; }
 .tag { font-size: .75em; padding: 1px 6px; border-radius: 99px; background: var(--warn-bg); color: var(--warn); margin-left: 4px; }
+textarea { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .85em; resize: vertical; }
+.hint code { font-size: .95em; }
+.hint a { color: inherit; }
