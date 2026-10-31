@@ -141,3 +141,4 @@ table.stores a { color: inherit; }
 textarea { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .85em; resize: vertical; }
 .hint code { font-size: .95em; }
 .hint a { color: inherit; }
+fieldset.article { border-color: var(--accent); }

@@ -10,9 +10,13 @@ und durchsucht auf Wunsch alle expert-Filialen inkl. Direktabzug/Aktionspreis un
 
 ## Funktionen
 
+- **Ein Artikel, beide Shops:** Suchbegriff, EAN oder eine Produkt-URL von expert, Euronics oder media@home
+  eingeben – der Deal-Alarm ordnet den Artikel über die EAN automatisch beiden Shops zu und prüft sie zusammen
 - Watchlist mit Wunschpreis pro Gerät, pausierbar, „Jetzt prüfen“ pro Gerät oder für alle
 - **expert**: Produkt-URL, Webcode oder Suchbegriff (mit Suchauswahl in der Oberfläche)
   - **jede Filiale wird einzeln abgefragt** – jede Niederlassung hat ihre eigenen Preise
+  - führt expert denselben Artikel unter mehreren Artikelnummern (Webcodes), werden alle geprüft –
+    deren Preise unterscheiden sich teils deutlich
   - Vergleichstabelle „Alle Filialpreise“ mit Preis, Versand, Gesamtpreis, Bestand und Prüfzeitpunkt
   - optional Ausstellungsstücke und nur lokal verfügbare Angebote im Umkreis deiner PLZ
 - **Euronics & media@home**: Onlineshop und **jeder Markt einzeln**
@@ -42,7 +46,8 @@ Jede Filiale wird einzeln abgefragt. Damit auch strenge Rate-Limits nicht zum Pr
 - **Gültigkeit:** Filialpreise, die älter als die eingestellte Zeit sind (Standard 24 h), zählen nicht
   mehr für den Dealalarm und werden in der Tabelle als „veraltet“ markiert.
 
-Bei expert dauert ein voller Scan aller ~350 Filialen mit Standardeinstellungen etwa eine Minute.
+Bei expert dauert ein voller Scan aller ~350 Filialen mit Standardeinstellungen etwa eine Minute pro
+Artikelnummer (z. B. ~5 Minuten für einen Artikel, den expert unter 4 Webcodes führt).
 
 ## Start mit Docker (empfohlen)
 
@@ -99,7 +104,9 @@ Der Dealalarm enthält Gerät, Preis, Wunschpreis und Filiale. Ein Tipp auf die 
 - **Dauer:** Bei 6 Anfragen/Minute dauert ein vollständiger Durchlauf durch alle ~300 euronics.de-Shops
   ca. 50 Minuten pro Gerät (media@home läuft parallel). Für mehrere Geräte den Umkreis begrenzen oder
   „Märkte pro Zyklus“ setzen – dann rotiert der Scan über mehrere Zyklen durch alle Märkte.
-- Eine Prüfung über alle expert-Filialen dauert ca. eine Minute pro Gerät. Bitte das Intervall nicht zu
+- Die Euronics-Suche über die EAN (wenn keine Euronics-URL hinterlegt ist) nutzt `euronics.de/search?sSearch=<EAN>`.
+  Findet sie nichts, bitte einmal die Euronics-Produkt-URL einfügen.
+- Eine Prüfung über alle expert-Filialen dauert ca. eine Minute pro Artikelnummer. Bitte das Intervall nicht zu
   klein wählen (Minimum 15 Minuten), damit die Shops nicht unnötig belastet werden.
 
 ## Entwicklung

@@ -30,20 +30,29 @@
   <form id="watch-form" method="dialog">
     <h2 id="watch-dialog-title">Gerät hinzufügen</h2>
     <input type="hidden" name="id">
-    <div class="row">
-      <label>Name<input name="name" placeholder="z. B. AirPods Pro 3" required></label>
-      <label>Wunschpreis (€)<input name="target_price" inputmode="decimal" placeholder="199,00" required></label>
-    </div>
+    <fieldset class="article">
+      <legend>Artikel</legend>
+      <label>Suchbegriff, EAN oder Produkt-URL von expert, Euronics oder media@home
+        <div class="search-row">
+          <input id="article-query" placeholder="z. B. AirPods Pro 3 – oder eine Produkt-URL einfügen">
+          <button type="button" id="btn-article-search" class="primary">Suchen</button>
+        </div>
+      </label>
+      <ul id="article-results" class="results hidden"></ul>
+      <p id="article-status" class="hint"></p>
+      <div class="row">
+        <label>Name<input name="name" placeholder="z. B. AirPods Pro 3" required></label>
+        <label>EAN<input name="ean" inputmode="numeric" placeholder="0195950543742"></label>
+        <label>Wunschpreis (€)<input name="target_price" inputmode="decimal" placeholder="199,00" required></label>
+      </div>
+      <p class="hint">Der Artikel wird bei beiden Shops zusammen geprüft. Fehlt unten eine Produkt-URL, sucht der Deal-Alarm den Artikel dort über die EAN.</p>
+    </fieldset>
 
     <fieldset>
       <legend><label class="inline"><input type="checkbox" name="expert_enabled" checked> expert</label></legend>
-      <label>Produkt-URL, Webcode oder Suchbegriff
-        <div class="search-row">
-          <input name="expert_query" placeholder="https://www.expert.de/shop/unsere-produkte/…html">
-          <button type="button" id="btn-expert-search">Suchen</button>
-        </div>
+      <label>Produkt-URL oder Webcode <span class="muted">(leer = automatisch über EAN)</span>
+        <input name="expert_query" placeholder="https://www.expert.de/shop/unsere-produkte/…html">
       </label>
-      <ul id="expert-results" class="results hidden"></ul>
       <label class="inline"><input type="checkbox" name="expert_all_branches" checked> Alle Filialen durchsuchen (versandfähige Angebote)</label>
       <label class="inline"><input type="checkbox" name="expert_include_display"> Ausstellungsstücke berücksichtigen</label>
       <label class="inline"><input type="checkbox" name="expert_include_local"> Auch nur lokal verfügbare Angebote</label>
@@ -52,14 +61,11 @@
 
     <fieldset>
       <legend><label class="inline"><input type="checkbox" name="euronics_enabled" checked> Euronics</label></legend>
-      <label>Produkt-URL oder Suchbegriff <span class="muted">(Onlineshop- oder Markt-URL)</span>
-        <input name="euronics_query" placeholder="https://www.euronics.de/… (leer = Suche über EAN)">
+      <label>Produkt-URL <span class="muted">(Onlineshop- oder Markt-URL, leer = automatisch über EAN)</span>
+        <input name="euronics_query" placeholder="https://www.euronics.de/…">
       </label>
       <label class="inline"><input type="checkbox" name="euronics_all_stores" checked> Alle Märkte einzeln durchsuchen (nicht nur den Onlineshop)</label>
       <label class="narrow">Umkreis um deine PLZ (km, 0 = ganz Deutschland)<input name="euronics_max_distance" inputmode="numeric" value="0"></label>
-      <label>EAN <span class="muted">(wird bei expert automatisch übernommen)</span>
-        <input name="ean" inputmode="numeric" placeholder="0195950543742">
-      </label>
     </fieldset>
 
     <label class="inline"><input type="checkbox" name="enabled" checked> Überwachung aktiv</label>

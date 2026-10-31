@@ -30,9 +30,8 @@ def format_price(value):
 def _shop_active(watch, shop):
     if not watch.get(f"{shop}_enabled"):
         return False
-    if shop == "euronics":
-        return bool(watch.get("euronics_query") or watch.get("ean"))
-    return bool(watch.get(f"{shop}_query"))
+    # Ohne eigene Angabe wird der Artikel im Shop über die EAN gesucht
+    return bool(watch.get(f"{shop}_query") or watch.get("ean"))
 
 
 def evaluate(watch, shop, result, previous):
