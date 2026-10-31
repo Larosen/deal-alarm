@@ -129,8 +129,8 @@ def create_app(start_scheduler=True):
     @app.post("/api/watches")
     def create_watch():
         values = _clean(request.get_json())
-        if not values.get("expert_query") and not values.get("euronics_query"):
-            raise ValueError("Bitte mindestens expert- oder Euronics-Produkt angeben")
+        if not any(values.get(k) for k in ("expert_query", "euronics_query", "ean")):
+            raise ValueError("Bitte einen Artikel auswählen")
         if not values.get("target_price"):
             raise ValueError("Bitte einen Wunschpreis angeben")
         return jsonify(storage.add_watch(values)), 201
@@ -183,6 +183,39 @@ def create_app(start_scheduler=True):
             total=len(markets),
             per_host=per_host,
         )
+
+    @app.get("/api/article/resolve")
+    def resolve_article():
+        """Ordnet eine Eingabe (URL eines Shops, EAN oder Suchbegriff) einem Artikel in beiden Shops zu."""
+        query = request.args.get("q", "").strip()
+        if not query:
+            return jsonify(error="Bitte Suchbegriff, URL oder EAN eingeben"), 400
+        try:
+            if "euronics.de" in query or "mediaathome.de" in query:
+                path = euronics.product_path(query.split("#")[0].split("?")[0], euronics.parse_store_list(query))
+                ean = euronics.ean_from_path(path)
+                if not ean:
+                    return jsonify(error="In der Euronics-URL steht keine EAN – bitte die Produktseite verwenden"), 400
+                match = expert.find_by_ean(ean)
+                title = match["title"] if match else euronics.title_from_path(path)
+                return jsonify(article={"title": title, "ean": ean,
+                                        "expert_query": match["url"] if match else "",
+                                        "euronics_query": f"{euronics.BASE}/{path}",
+                                        "expert_found": bool(match)})
+            if "expert.de" in query or expert.is_ean(query) or expert.extract_webcode(query):
+                product = expert.resolve(query)
+                return jsonify(article={"title": product["title"], "ean": product["ean"],
+                                        "expert_query": product["url"], "euronics_query": "",
+                                        "expert_found": True})
+            return jsonify(results=[{**hit, "expert_query": hit["url"]} for hit in expert.search(query)[:10]])
+        except LookupError as exc:
+            if expert.is_ean(query):
+                # Nicht bei expert – Euronics sucht trotzdem über die EAN
+                return jsonify(article={"title": "", "ean": query, "expert_query": "", "euronics_query": "",
+                                        "expert_found": False})
+            return jsonify(error=str(exc)), 404
+        except Exception as exc:
+            return jsonify(error=f"Suche fehlgeschlagen: {exc}"), 502
 
     @app.get("/api/expert/search")
     def expert_search():

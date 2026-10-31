@@ -56,8 +56,28 @@ def extract_webcode(query):
     return None
 
 
+def find_by_ean(ean):
+    """Artikel zur EAN oder None, wenn expert ihn nicht führt."""
+    response = _session().get(f"{API}/api/search/article", params={"ean": ean}, timeout=20)
+    if response.status_code == 204:
+        return None
+    response.raise_for_status()
+    data = response.json()
+    return _article_info(data) if data and data.get("webcode") else None
+
+
+def is_ean(value):
+    value = (value or "").strip()
+    return value.isdigit() and len(value) in (8, 12, 13, 14)
+
+
 def resolve(query):
-    """Löst URL, Webcode oder Suchbegriff (erster Treffer) zu Produktinfos auf."""
+    """Löst URL, Webcode, EAN oder Suchbegriff (erster Treffer) zu Produktinfos auf."""
+    if is_ean(query):
+        product = find_by_ean(query.strip())
+        if not product:
+            raise LookupError(f"EAN {query.strip()} gibt es bei expert nicht")
+        return product
     webcode = extract_webcode(query)
     if webcode is None:
         hits = search(query)
@@ -70,6 +90,23 @@ def resolve(query):
     if not data or not data.get("webcode"):
         raise LookupError(f"Webcode {webcode} bei expert unbekannt")
     return _article_info(data)
+
+
+def find_listings(product):
+    """Alle Webcodes, unter denen expert denselben Artikel (gleiche EAN) führt – {webcode: URL}.
+
+    expert listet einen Artikel teils mehrfach mit unterschiedlichen Preisen.
+    """
+    listings = {product["webcode"]: product["url"]}
+    if not product.get("ean"):
+        return listings
+    try:
+        for hit in search(product["title"]):
+            if hit["ean"] == product["ean"] and hit["webcode"] and hit["url"]:
+                listings.setdefault(hit["webcode"], hit["url"])
+    except Exception:
+        pass  # Zusatzsuche ist optional
+    return listings
 
 
 def get_branches():
@@ -166,10 +203,21 @@ def filter_offers(offers, watch, settings):
 
 def check(watch, settings, store_state):
     """Fragt jede Filiale einzeln ab und liefert (Ergebnis, neuer Filialstatus)."""
-    product = resolve(watch["expert_query"])
-    webcode = product["webcode"]
-    # Filialstatus gilt nur für dieses Produkt
-    if store_state.get("_webcode") != webcode:
+    query = (watch.get("expert_query") or "").strip()
+    if query:
+        product = resolve(query)
+    else:
+        # Artikel wurde über einen anderen Shop ausgewählt: per EAN zuordnen
+        product = find_by_ean(watch["ean"])
+        if product is None:
+            return {
+                "title": "", "url": "", "ean": watch["ean"], "price": None, "available": False,
+                "detail": f"Nicht im expert-Sortiment (EAN {watch['ean']})",
+            }, {}
+    listings = find_listings(product)
+    webcodes = sorted(listings)
+    # Filialstatus gilt nur für diese Artikel
+    if store_state.get("_webcodes") != webcodes:
         store_state = {}
     stores_state = {k: v for k, v in store_state.items() if not k.startswith("_")}
 
@@ -178,12 +226,20 @@ def check(watch, settings, store_state):
     session = _session()
 
     def fetch(store):
-        response = ratelimit.request(session, limiter, "GET", f"{API}/api/pricepds",
-                                     params={"webcode": webcode, "storeId": store["exp_id"]})
-        if response.status_code == 404:
-            return None
-        response.raise_for_status()
-        return parse_offer(response.json())
+        """Günstigstes Angebot der Filiale über alle Webcodes des Artikels."""
+        best = None
+        for webcode in webcodes:
+            response = ratelimit.request(session, limiter, "GET", f"{API}/api/pricepds",
+                                         params={"webcode": webcode, "storeId": store["exp_id"]})
+            if response.status_code == 404:
+                continue
+            response.raise_for_status()
+            offer = parse_offer(response.json())
+            if offer and (best is None or offer["total_price"] < best["total_price"]):
+                offer["webcode"] = webcode
+                offer["url"] = store_url(listings[webcode], store["id"])
+                best = offer
+        return best
 
     stores = list_stores(watch.get("expert_all_branches", True))
     budget = int(settings.get("expert_stores_per_cycle") or 0) or None
@@ -191,8 +247,6 @@ def check(watch, settings, store_state):
                                    workers=int(settings.get("expert_workers") or 8))
 
     offers = filter_offers(scan.fresh_offers(stores_state, float(settings.get("price_max_age_hours") or 24)), watch, settings)
-    for offer in offers:
-        offer["url"] = store_url(product["url"], offer["store_id"])
     best = offers[0] if offers else None
     result = {
         "title": product["title"],
@@ -200,10 +254,10 @@ def check(watch, settings, store_state):
         "ean": product["ean"],
         "price": best["total_price"] if best else None,
         "available": best is not None,
-        "detail": _describe(best, len(offers)),
+        "detail": _describe(best, len(offers)) + (f" · {len(webcodes)} expert-Artikelnummern" if len(webcodes) > 1 else ""),
         "scan": stats,
     }
-    return result, {**stores_state, "_webcode": webcode, "_product_url": product["url"]}
+    return result, {**stores_state, "_webcodes": webcodes, "_product_url": product["url"]}
 
 
 def _describe(best, count):

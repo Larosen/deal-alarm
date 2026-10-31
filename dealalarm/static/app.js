@@ -52,7 +52,7 @@ function renderWatch(w) {
   const shops = $(".shops", card);
   let anyDeal = false;
   for (const shop of ["expert", "euronics"]) {
-    const active = w[`${shop}_enabled`] && (w[`${shop}_query`] || (shop === "euronics" && w.ean));
+    const active = w[`${shop}_enabled`] && (w[`${shop}_query`] || w.ean);
     if (!active) continue;
     const r = (w.results || {})[shop];
     const el = document.createElement("div");
@@ -211,7 +211,9 @@ function openWatchDialog(w) {
   fillForm(watchForm, values);
   $("#watch-dialog-title").textContent = w ? "Gerät bearbeiten" : "Gerät hinzufügen";
   $("#watch-error").textContent = "";
-  $("#expert-results").classList.add("hidden");
+  $("#article-results").classList.add("hidden");
+  $("#article-query").value = "";
+  $("#article-status").textContent = "";
   watchDialog.showModal();
 }
 
@@ -228,29 +230,48 @@ watchForm.addEventListener("submit", async (ev) => {
   } catch (e) { $("#watch-error").textContent = e.message; }
 });
 
-$("#btn-expert-search").addEventListener("click", async () => {
-  const q = watchForm.elements.expert_query.value.trim();
-  const list = $("#expert-results");
+// Ein Artikel für beide Shops: Auswahl füllt Name, EAN und die Angaben für expert und Euronics
+function applyArticle(article) {
+  const f = watchForm.elements;
+  if (article.title) f.name.value = article.title;
+  f.ean.value = article.ean || "";
+  f.expert_query.value = article.expert_query || "";
+  f.euronics_query.value = article.euronics_query || "";
+  f.expert_enabled.checked = true;
+  f.euronics_enabled.checked = true;
+  const status = [];
+  status.push(article.expert_found ? "expert: gefunden ✔" : "expert: nicht im Sortiment – wird trotzdem regelmäßig über die EAN gesucht");
+  status.push(article.euronics_query ? "Euronics: URL übernommen ✔" : "Euronics: wird über die EAN gesucht");
+  $("#article-status").textContent = status.join(" · ");
+  $("#article-results").classList.add("hidden");
+}
+
+async function searchArticle() {
+  const q = $("#article-query").value.trim();
+  const list = $("#article-results");
   if (!q) return;
-  list.innerHTML = "<li>Suche …</li>";
-  list.classList.remove("hidden");
+  $("#article-status").textContent = "Suche …";
+  list.classList.add("hidden");
   try {
-    const hits = await api("GET", `/api/expert/search?q=${encodeURIComponent(q)}`);
+    const res = await api("GET", `/api/article/resolve?q=${encodeURIComponent(q)}`);
+    $("#article-status").textContent = "";
+    if (res.article) return applyArticle(res.article);
     list.replaceChildren();
-    if (!hits.length) list.innerHTML = "<li>Keine Treffer</li>";
-    for (const hit of hits) {
+    list.classList.remove("hidden");
+    if (!res.results.length) {
+      list.innerHTML = "<li>Keine Treffer bei expert – füge eine Euronics-URL oder die EAN ein</li>";
+      return;
+    }
+    for (const hit of res.results) {
       const li = document.createElement("li");
-      li.textContent = `${hit.title} (Webcode ${hit.webcode})`;
-      li.addEventListener("click", () => {
-        watchForm.elements.expert_query.value = hit.url;
-        if (!watchForm.elements.name.value) watchForm.elements.name.value = hit.title;
-        if (hit.ean) watchForm.elements.ean.value = hit.ean;
-        list.classList.add("hidden");
-      });
+      li.textContent = `${hit.title}${hit.ean ? ` · EAN ${hit.ean}` : ""}`;
+      li.addEventListener("click", () => applyArticle({ ...hit, euronics_query: "", expert_found: true }));
       list.append(li);
     }
-  } catch (e) { list.innerHTML = ""; list.append(Object.assign(document.createElement("li"), { textContent: e.message })); }
-});
+  } catch (e) { $("#article-status").textContent = e.message; }
+}
+$("#btn-article-search").addEventListener("click", searchArticle);
+$("#article-query").addEventListener("keydown", (ev) => { if (ev.key === "Enter") { ev.preventDefault(); searchArticle(); } });
 
 // ---------- Einstellungen ----------
 const settingsDialog = $("#settings-dialog");
