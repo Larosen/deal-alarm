@@ -11,15 +11,32 @@ Der Preis wird aus den strukturierten Produktdaten (schema.org) der Seite gelese
 
 import html
 import json
+import logging
+import os
 import re
+import threading
+import time
 from urllib.parse import quote_plus, urljoin, urlsplit
 
+import requests
+
 from .. import ratelimit, scan
-from .common import http_session, parse_price
+from .common import haversine_km, http_session, parse_price, plz_coordinates
+
+log = logging.getLogger(__name__)
 
 BASE = "https://www.euronics.de"
 ONLINE_STORE = "online"
 HOSTS = {"www.euronics.de": "Euronics", "www.mediaathome.de": "media@home"}
+
+# Händlerverzeichnis: Daten der Euronics-Händlersuche (Woosmap), gesammelt vom offenen
+# Projekt All The Places (CC0). Mitgeliefert als Momentaufnahme, wöchentlich aktualisiert.
+MARKETS_BACKUP = os.path.join(os.path.dirname(__file__), "euronics_markets.json")
+ATP_LATEST = "https://data.alltheplaces.xyz/runs/latest.json"
+ATP_SPIDER = "euronics_de"
+MARKETS_REFRESH_SECONDS = 7 * 24 * 3600
+_markets = {"time": 0, "data": None}
+_markets_lock = threading.Lock()
 
 _JSONLD_RE = re.compile(r'<script[^>]+type=["\']application/ld\+json["\'][^>]*>(.*?)</script>', re.S | re.I)
 _META_RE = re.compile(r'<meta[^>]+(?:itemprop|property|name)=["\']([^"\']+)["\'][^>]*content=["\']([^"\']*)["\']', re.I)
@@ -83,6 +100,99 @@ def parse_store_list(text):
         label = name.strip() or f"{HOSTS[host]} {slug.replace('-', ' ').title()}"
         stores.append({"id": store_id, "name": label, "base": f"https://{host}/{slug}", "slug": slug})
     return stores
+
+
+def markets_from_geojson(geojson, source=""):
+    """Wandelt die GeoJSON-Ausgabe von All The Places in die Shop-Liste um (ein Eintrag je Shop-URL)."""
+    shops = {}
+    for feature in geojson.get("features", []):
+        props = feature.get("properties") or {}
+        url = (props.get("website") or "").rstrip("/")
+        coords = (feature.get("geometry") or {}).get("coordinates")
+        if not url or not coords:
+            continue
+        shops.setdefault(url, []).append({
+            "name": props.get("name", ""),
+            "street": props.get("addr:street_address", ""),
+            "postcode": props.get("addr:postcode", ""),
+            "city": props.get("addr:city", ""),
+            "lat": round(coords[1], 6),
+            "lon": round(coords[0], 6),
+        })
+    return {"source": source, "shops": [{"url": u, "locations": sorted(l, key=lambda x: x["name"])}
+                                         for u, l in sorted(shops.items())]}
+
+
+def _download_directory():
+    latest = requests.get(ATP_LATEST, timeout=30).json()
+    run_base = latest["output_url"].rsplit("/", 1)[0]
+    response = requests.get(f"{run_base}/output/{ATP_SPIDER}.geojson", timeout=60)
+    response.raise_for_status()
+    data = markets_from_geojson(response.json(), f"All The Places (CC0), Lauf {latest.get('run_id', '?')}")
+    if len(data["shops"]) < 100:
+        raise ValueError(f"Nur {len(data['shops'])} Shops geliefert")
+    return data
+
+
+def load_directory():
+    """Händlerverzeichnis (wöchentlich aktualisiert, mitgelieferte Momentaufnahme als Fallback)."""
+    with _markets_lock:
+        if _markets["data"] and time.time() - _markets["time"] < MARKETS_REFRESH_SECONDS:
+            return _markets["data"]
+        try:
+            data = _download_directory()
+        except Exception as exc:
+            log.info("Händlerverzeichnis nicht aktualisiert (%s) – nutze %s", exc,
+                     "letzten Stand" if _markets["data"] else "mitgelieferte Liste")
+            data = _markets["data"]
+            if data is None:
+                with open(MARKETS_BACKUP, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+        _markets.update(time=time.time(), data=data)
+        return data
+
+
+def directory_stores():
+    stores = []
+    for shop in load_directory()["shops"]:
+        parsed = parse_store_list(shop["url"])
+        if not parsed:
+            continue
+        store = parsed[0]
+        locations = shop["locations"]
+        store["name"] = locations[0]["name"] + (f" (+{len(locations) - 1} Filialen)" if len(locations) > 1 else "")
+        store["locations"] = locations
+        stores.append(store)
+    return stores
+
+
+def select_markets(watch, settings):
+    """Alle zu prüfenden Märkte: Verzeichnis + eigene Einträge, optional auf einen Umkreis begrenzt."""
+    if not watch.get("euronics_all_stores", True):
+        return []
+    markets = {}
+    if settings.get("euronics_use_directory", True):
+        markets.update((s["id"], s) for s in directory_stores())
+    for store in parse_store_list(settings.get("euronics_stores")):
+        if store["id"] in markets:
+            markets[store["id"]]["name"] = store["name"]  # eigener Name hat Vorrang
+        else:
+            markets[store["id"]] = store
+    user_coords = plz_coordinates(settings["plz"]) if settings.get("plz") else None
+    radius = float(watch.get("euronics_max_distance") or 0)
+    selected = []
+    for store in markets.values():
+        locations = store.get("locations") or []
+        if user_coords and locations:
+            nearest = min(locations, key=lambda l: haversine_km(user_coords, (l["lat"], l["lon"])))
+            store["coordinates"] = (nearest["lat"], nearest["lon"])
+            store["distance_km"] = round(haversine_km(user_coords, store["coordinates"]))
+        elif locations:
+            store["coordinates"] = (locations[0]["lat"], locations[0]["lon"])
+        if radius and user_coords and store.get("distance_km", float("inf")) > radius:
+            continue
+        selected.append(store)
+    return sorted(selected, key=lambda s: s.get("distance_km", float("inf")))
 
 
 def product_path(url, stores=()):
@@ -221,7 +331,7 @@ def to_offer(product):
 
 def check(watch, settings, store_state):
     """Fragt Onlineshop und – falls gewünscht – jeden Markt einzeln ab."""
-    markets = parse_store_list(settings.get("euronics_stores")) if watch.get("euronics_all_stores", True) else []
+    markets = select_markets(watch, settings)
     path = _resolve_path(watch, settings, markets, store_state)
     if store_state.get("_product_path") != path:
         store_state = {}
@@ -240,6 +350,8 @@ def check(watch, settings, store_state):
         offer = to_offer(parse_product_page(response.text, url))
         if offer:
             offer["url"] = url
+            if store.get("distance_km") is not None:
+                offer["distance_km"] = store["distance_km"]
         return offer
 
     budget = int(settings.get("euronics_stores_per_cycle") or 0) or None

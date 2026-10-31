@@ -2,6 +2,15 @@ import json
 
 import pytest
 
+
+@pytest.fixture(autouse=True)
+def offline_directory(monkeypatch):
+    """Tests nutzen immer die mitgelieferte Marktliste, nie das Netz."""
+    def no_download():
+        raise OSError("offline")
+    monkeypatch.setattr(euronics, "_download_directory", no_download)
+    monkeypatch.setattr(euronics, "_markets", {"time": 0, "data": None})
+
 from dealalarm import checker, ratelimit, scan
 from dealalarm.shops import euronics, expert
 from dealalarm.shops.common import parse_price
@@ -242,7 +251,7 @@ def test_euronics_scans_every_market(monkeypatch):
     }
     monkeypatch.setattr(euronics, "_get", lambda url, settings, session=None, allow_missing=False: pages[url])
     watch = {"euronics_query": f"https://www.euronics.de/hamburg-stahn/{PATH}", "euronics_all_stores": True}
-    settings = {"euronics_stores": MARKETS, "price_max_age_hours": 24}
+    settings = {"euronics_stores": MARKETS, "euronics_use_directory": False, "price_max_age_hours": 24}
     result, state = euronics.check(watch, settings, {})
     assert result["price"] == 299.0 and result["detail"].startswith("Euronics Hamburg Buddenhagen")
     assert result["ean"] == "4065465374635" and result["title"] == "Braun Series 9"
@@ -259,7 +268,7 @@ def test_euronics_partial_block_keeps_other_domain(monkeypatch):
         return _Page(url, 300.0)
     monkeypatch.setattr(euronics, "_get", fake_get)
     watch = {"euronics_query": f"https://www.euronics.de/{PATH}"}
-    result, state = euronics.check(watch, {"euronics_stores": MARKETS}, {})
+    result, state = euronics.check(watch, {"euronics_stores": MARKETS, "euronics_use_directory": False}, {})
     assert result["scan"]["aborted"] and result["scan"]["checked"] == 3 and result["price"] == 300.0
 
 
@@ -268,4 +277,37 @@ def test_euronics_fully_blocked_raises(monkeypatch):
         raise ratelimit.RateLimited("gesperrt")
     monkeypatch.setattr(euronics, "_get", fake_get)
     with pytest.raises(ratelimit.RateLimited):
-        euronics.check({"euronics_query": f"https://www.euronics.de/{PATH}"}, {"euronics_stores": MARKETS}, {})
+        euronics.check({"euronics_query": f"https://www.euronics.de/{PATH}"},
+                       {"euronics_stores": MARKETS, "euronics_use_directory": False}, {})
+
+
+def test_markets_from_geojson_groups_locations_by_shop():
+    geo = {"features": [
+        {"properties": {"name": "Buddenhagen Wentorf", "website": "https://www.euronics.de/hamburg-buddenhagen"},
+         "geometry": {"coordinates": [10.25, 53.49]}},
+        {"properties": {"name": "Buddenhagen Ahrensburg", "website": "https://www.euronics.de/hamburg-buddenhagen/"},
+         "geometry": {"coordinates": [10.24, 53.67]}},
+        {"properties": {"name": "ohne Website"}, "geometry": {"coordinates": [0, 0]}},
+    ]}
+    data = euronics.markets_from_geojson(geo, "test")
+    assert len(data["shops"]) == 1 and len(data["shops"][0]["locations"]) == 2
+
+
+def test_bundled_directory_contains_hamburg_markets():
+    ids = {s["id"]: s for s in euronics.directory_stores()}
+    assert len(ids) > 300
+    assert "www.euronics.de/hamburg-buddenhagen" in ids and "www.mediaathome.de/hamburg-badje-ott" in ids
+    assert "(+3 Filialen)" in ids["www.euronics.de/hamburg-buddenhagen"]["name"]
+
+
+def test_select_markets_radius_and_manual_names(monkeypatch):
+    monkeypatch.setattr(euronics, "plz_coordinates", lambda plz: (53.6226, 9.9513))  # Hamburg-Niendorf
+    settings = {"plz": "22459", "euronics_use_directory": True,
+                "euronics_stores": "Mein Lieblingsmarkt | https://www.euronics.de/hamburg-stahn"}
+    near = euronics.select_markets({"euronics_max_distance": 20}, settings)
+    ids = [s["id"] for s in near]
+    assert "www.euronics.de/hamburg-stahn" in ids and "www.mediaathome.de/hamburg-badje-ott" in ids
+    assert all(s["distance_km"] <= 20 for s in near) and len(near) < 30
+    assert next(s for s in near if s["id"].endswith("hamburg-stahn"))["name"] == "Mein Lieblingsmarkt"
+    assert len(euronics.select_markets({}, settings)) > 300
+    assert euronics.select_markets({"euronics_all_stores": False}, settings) == []

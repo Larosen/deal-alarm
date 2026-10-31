@@ -1,0 +1,5178 @@
+{
+ "source": "All The Places (CC0), Spider euronics_de, Lauf 2026-10-17-13-32-31",
+ "shops": [
+  {
+   "url": "https://www.euronics.de/achern-schindler",
+   "locations": [
+    {
+     "name": "EURONICS Schindler",
+     "street": "Bundesstraße, 23",
+     "postcode": "77855",
+     "city": "Achern-Fautenbach",
+     "lat": 48.622944,
+     "lon": 8.050698
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/adelmannsfelden-schmid",
+   "locations": [
+    {
+     "name": "EURONICS Schmid",
+     "street": "Schillerstraße, 117",
+     "postcode": "73486",
+     "city": "Adelmannsfelden",
+     "lat": 48.952579,
+     "lon": 9.997657
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/aken-leuschner",
+   "locations": [
+    {
+     "name": "EURONICS Leuschner",
+     "street": "Kantorstr., 1a",
+     "postcode": "06385",
+     "city": "Aken",
+     "lat": 51.853364,
+     "lon": 12.044961
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/alheim-waffenschmidt",
+   "locations": [
+    {
+     "name": "Waffenschmidt",
+     "street": "Nürnberger Str., 24",
+     "postcode": "36211",
+     "city": "Alheim",
+     "lat": 51.04743,
+     "lon": 9.66468
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/allstedt-ringel",
+   "locations": [
+    {
+     "name": "Euronics Ringel",
+     "street": "Bäckerplatz, 11",
+     "postcode": "06542",
+     "city": "Allstedt - LK Mansfeld-Südharz",
+     "lat": 51.403923,
+     "lon": 11.390168
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/alsheim-schoefer",
+   "locations": [
+    {
+     "name": "EURONICS Schöfer",
+     "street": "Mainzer Str., 23",
+     "postcode": "67577",
+     "city": "Alsheim",
+     "lat": 49.76929,
+     "lon": 8.34198
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/apen-augustfehn-loening",
+   "locations": [
+    {
+     "name": "Löning",
+     "street": "Mühlenstrasse, 18",
+     "postcode": "26689",
+     "city": "Apen-Augustfehn",
+     "lat": 53.218564,
+     "lon": 7.758518
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/artern-raetzke",
+   "locations": [
+    {
+     "name": "EURONICS Rätzke",
+     "street": "Leipziger Str., 26",
+     "postcode": "06556",
+     "city": "Artern",
+     "lat": 51.364534,
+     "lon": 11.291664
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/aue-weichhold",
+   "locations": [
+    {
+     "name": "Euronics Weichhold",
+     "street": "Bahnhofstraße, 20",
+     "postcode": "08280",
+     "city": "Aue - Bad Schlema",
+     "lat": 50.588086,
+     "lon": 12.702702
+    },
+    {
+     "name": "Weichhold GmbH - Abhollager",
+     "street": "Marksteig, 5",
+     "postcode": "08280",
+     "city": "Aue - Bad Schlema OT Alberoda",
+     "lat": 50.615056,
+     "lon": 12.698781
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/bad-belzig-bild-und-ton",
+   "locations": [
+    {
+     "name": "EURONICS Bild + Ton",
+     "street": "Sandberger Str., 2",
+     "postcode": "14806",
+     "city": "Bad Belzig",
+     "lat": 52.139685,
+     "lon": 12.587011
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/bad-berleburg-spies",
+   "locations": [
+    {
+     "name": "EURONICS Schneider & Tschosnig OHG",
+     "street": "Poststr., 16",
+     "postcode": "57319",
+     "city": "Bad Berleburg",
+     "lat": 51.05049,
+     "lon": 8.392434
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/bad-homburg-sayed",
+   "locations": [
+    {
+     "name": "EURONICS mobil-Sayed",
+     "street": "Louisenstr., 41",
+     "postcode": "61348",
+     "city": "Bad Homburg",
+     "lat": 50.227659,
+     "lon": 8.61452
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/bad-koenig-heitzmann",
+   "locations": [
+    {
+     "name": "EURONICS Heitzmann",
+     "street": "Bahnhofstr., 50",
+     "postcode": "64732",
+     "city": "Bad König",
+     "lat": 49.739079,
+     "lon": 9.002821
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/bad-lobenstein-multi-shop",
+   "locations": [
+    {
+     "name": "EURONICS Wenzel",
+     "street": "Goldbach, 1",
+     "postcode": "07356",
+     "city": "Bad Lobenstein",
+     "lat": 50.44993,
+     "lon": 11.65184
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/bad-pyrmont-gerth",
+   "locations": [
+    {
+     "name": "EURONICS Gerth",
+     "street": "Schillerstraße, 18",
+     "postcode": "31812",
+     "city": "Bad Pyrmont",
+     "lat": 51.98371,
+     "lon": 9.24386
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/bad-soden-na-mobile",
+   "locations": [
+    {
+     "name": "EURONICS Bad Soden",
+     "street": "Königsteiner Str., 6",
+     "postcode": "65812",
+     "city": "Bad Soden",
+     "lat": 50.135478,
+     "lon": 8.511579
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/bad-soden-salmuenster-beisler",
+   "locations": [
+    {
+     "name": "EURONICS Beisler",
+     "street": "Frankfurter Straße, 9+20",
+     "postcode": "63628",
+     "city": "Bad Soden/Salmünster",
+     "lat": 50.277309,
+     "lon": 9.368108
+    },
+    {
+     "name": "EURONICS Beisler Schlüchtern",
+     "street": "Am Reitstück, 6",
+     "postcode": "36381",
+     "city": "Schlüchtern",
+     "lat": 50.356869,
+     "lon": 9.535413
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/bad-wiessee-prestel",
+   "locations": [
+    {
+     "name": "EURONICS Prestel",
+     "street": "Sanktjohanserstr., 65",
+     "postcode": "83707",
+     "city": "Bad Wiessee",
+     "lat": 47.70397,
+     "lon": 11.72834
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/bad-woerishofen-riedl",
+   "locations": [
+    {
+     "name": "EURONICS Riedl",
+     "street": "Hochstr., 22",
+     "postcode": "86825",
+     "city": "Bad Wörishofen",
+     "lat": 48.007784,
+     "lon": 10.59986
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/bammental-reindl",
+   "locations": [
+    {
+     "name": "EURONICS Reindl",
+     "street": "Joh.-Sebastian-Bach-Str., 5",
+     "postcode": "69245",
+     "city": "Bammental",
+     "lat": 49.352278,
+     "lon": 8.780483
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/barsinghausen-kapmeyer-team",
+   "locations": [
+    {
+     "name": "EURONICS  Barsinghausen",
+     "street": "Marktstr., 49",
+     "postcode": "30890",
+     "city": "Barsinghausen",
+     "lat": 52.303302,
+     "lon": 9.459613
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/beckum-pelkmann",
+   "locations": [
+    {
+     "name": "Elektro Pelkmann",
+     "street": "Neubeckumer Straße, 16-22",
+     "postcode": "59269",
+     "city": "Beckum",
+     "lat": 51.76158,
+     "lon": 8.0433
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/berchtesgaden-denk",
+   "locations": [
+    {
+     "name": "EURONICS Denk",
+     "street": "Maximilianstrasse, 13",
+     "postcode": "83471",
+     "city": "Berchtesgaden",
+     "lat": 47.6304,
+     "lon": 13.0015
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/berlin-brueckner",
+   "locations": [
+    {
+     "name": "EURONICS Brückner",
+     "street": "Marienfelder Allee, 103",
+     "postcode": "12277",
+     "city": "Berlin",
+     "lat": 52.417269,
+     "lon": 13.366906
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/berlin-elektrohaus-mariendorf",
+   "locations": [
+    {
+     "name": "EURONICS Mariendorf",
+     "street": "Mariendorfer Damm, 78",
+     "postcode": "12109",
+     "city": "Berlin",
+     "lat": 52.4457,
+     "lon": 13.38569
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/berlin-scheibner",
+   "locations": [
+    {
+     "name": "EURONICS Scheibner",
+     "street": "Hellersdorfer Str., 79-83",
+     "postcode": "12619",
+     "city": "Berlin",
+     "lat": 52.52259,
+     "lon": 13.58699
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/berlin-thauer",
+   "locations": [
+    {
+     "name": "Euronics THAUER Technology",
+     "street": "Danziger Str., 46",
+     "postcode": "10435",
+     "city": "Berlin",
+     "lat": 52.53942,
+     "lon": 13.41934
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/berlin-tonhaus-melodie",
+   "locations": [
+    {
+     "name": "EURONICS Pick & Go Tonhaus Melodie",
+     "street": "Wilhelm-Kabus-Str., 74",
+     "postcode": "10829",
+     "city": "Berlin (Südkreuz - Euronics Pick&Go)",
+     "lat": 52.480717,
+     "lon": 13.36569
+    },
+    {
+     "name": "EURONICS Tonhaus Melodie",
+     "street": "Grunewaldstr., 61-62",
+     "postcode": "10825",
+     "city": "Berlin (Schöneberg - Euronics Showroom)",
+     "lat": 52.488578,
+     "lon": 13.342705
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/berlin-ziermann",
+   "locations": [
+    {
+     "name": "EURONICS Ziermann",
+     "street": "Obstallee, 28",
+     "postcode": "13593",
+     "city": "Berlin",
+     "lat": 52.5225,
+     "lon": 13.16537
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/bernau-faschian",
+   "locations": [
+    {
+     "name": "EURONICS Faschian",
+     "street": "Hauptstr., 18",
+     "postcode": "79682",
+     "city": "Todtmoos",
+     "lat": 47.74005,
+     "lon": 8.00182
+    },
+    {
+     "name": "EURONICS Faschian",
+     "street": "Todtmooserstr., 71",
+     "postcode": "79872",
+     "city": "Bernau",
+     "lat": 47.791389,
+     "lon": 8.061491
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/bernkastel-kues-port",
+   "locations": [
+    {
+     "name": "EURONICS Port",
+     "street": "Zur Sandgrube, 2",
+     "postcode": "54470",
+     "city": "Bernkastel-Kues/Andel",
+     "lat": 49.91067,
+     "lon": 7.03625
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/bersenbrueck-hugenberg",
+   "locations": [
+    {
+     "name": "EURONICS Hugenberg",
+     "street": "Robert-Bosch-Str., 8",
+     "postcode": "49593",
+     "city": "Bersenbrück",
+     "lat": 52.55613,
+     "lon": 7.9335
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/biebesheim-giehler",
+   "locations": [
+    {
+     "name": "EURONICS Giehler",
+     "street": "Gernsheimerstr., 3",
+     "postcode": "64584",
+     "city": "Biebesheim",
+     "lat": 49.77695,
+     "lon": 8.46686
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/bitburg-conrad",
+   "locations": [
+    {
+     "name": "EURONICS Conrad",
+     "street": "Rautenberg, 1",
+     "postcode": "54634",
+     "city": "Bitburg",
+     "lat": 49.97306,
+     "lon": 6.52081
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/blaustein-lamparter",
+   "locations": [
+    {
+     "name": "Euronics Lamparter",
+     "street": "Ulmer Str., 68",
+     "postcode": "89134",
+     "city": "Blaustein",
+     "lat": 48.417078,
+     "lon": 9.913125
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/bleckede-energieversorgung",
+   "locations": [
+    {
+     "name": "EURONICS EVDBAG",
+     "street": "Fritz-von-dem-Berge-Str., 40",
+     "postcode": "21354",
+     "city": "Bleckede",
+     "lat": 53.28678,
+     "lon": 10.73864
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/bochum-klaes",
+   "locations": [
+    {
+     "name": "EURONICS ELEKTROHAUS KLAES",
+     "street": "Alte Bahnhofstr., 189",
+     "postcode": "44892",
+     "city": "Bochum",
+     "lat": 51.475801,
+     "lon": 7.302937
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/bottrop-formella",
+   "locations": [
+    {
+     "name": "EURONICS Formella",
+     "street": "Gladbecker Str., 55",
+     "postcode": "46236",
+     "city": "Bottrop",
+     "lat": 51.52653,
+     "lon": 6.928693
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/bruckmuehl-zobel",
+   "locations": [
+    {
+     "name": "EURONICS Zobel",
+     "street": "Göttinger Str., 1a",
+     "postcode": "83052",
+     "city": "Bruckmühl",
+     "lat": 47.87987,
+     "lon": 11.91147
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/bruehl-kastenholz",
+   "locations": [
+    {
+     "name": "Euronics Kastenholz",
+     "street": "Heinrich-Esser-Str., 25-27",
+     "postcode": "50321",
+     "city": "Brühl",
+     "lat": 50.831655,
+     "lon": 6.905859
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/bueren-lueke",
+   "locations": [
+    {
+     "name": "EURONICS Lüke",
+     "street": "Werkstr., 7",
+     "postcode": "33142",
+     "city": "Büren",
+     "lat": 51.53908,
+     "lon": 8.56899
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/buerstadt-preuss",
+   "locations": [
+    {
+     "name": "EURONICS Preuss",
+     "street": "Lorscher Str., 19",
+     "postcode": "68642",
+     "city": "Bürstadt",
+     "lat": 49.64916,
+     "lon": 8.46813
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/buetzow-kutz",
+   "locations": [
+    {
+     "name": "Kutz",
+     "street": "Lange Str., 17",
+     "postcode": "18246",
+     "city": "Bützow",
+     "lat": 53.847719,
+     "lon": 11.984489
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/burgebrach-ludwig",
+   "locations": [
+    {
+     "name": "EURONICS Ludwig",
+     "street": "Am Sportplatz, 6",
+     "postcode": "96138",
+     "city": "Burgebrach",
+     "lat": 49.826864,
+     "lon": 10.747981
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/butzbach-hilgenberg",
+   "locations": [
+    {
+     "name": "EURONICS Hilgenberg",
+     "street": "Hauptstr., 55",
+     "postcode": "35440",
+     "city": "Linden",
+     "lat": 50.528977,
+     "lon": 8.681032
+    },
+    {
+     "name": "EURONICS Hilgenberg",
+     "street": "Philipp-Reis-Str., 5",
+     "postcode": "35510",
+     "city": "Butzbach",
+     "lat": 50.43511,
+     "lon": 8.68218
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/buxtehude-wiegel",
+   "locations": [
+    {
+     "name": "EURONICS Krumm",
+     "street": "Friedrich - Huth - Str., 5 a",
+     "postcode": "21698",
+     "city": "Harsefeld",
+     "lat": 53.455093,
+     "lon": 9.501621
+    },
+    {
+     "name": "EURONICS Wiegel",
+     "street": "Zwischen den Brücken, 1",
+     "postcode": "21614",
+     "city": "Buxtehude",
+     "lat": 53.47526,
+     "lon": 9.69784
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/cloppenburg-gaak",
+   "locations": [
+    {
+     "name": "Gaak Hausgeräte GmbH",
+     "street": "Wilhelm-Röntgen-Str., 3",
+     "postcode": "49661",
+     "city": "Cloppenburg",
+     "lat": 52.838819,
+     "lon": 8.074746
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/cloppenburg-woelbern",
+   "locations": [
+    {
+     "name": "EURONICS Wölbern",
+     "street": "Osterstr., 11",
+     "postcode": "49661",
+     "city": "Cloppenburg",
+     "lat": 52.848379,
+     "lon": 8.043642
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/coburg-haase",
+   "locations": [
+    {
+     "name": "EURONICS Haase",
+     "street": "Rodacher Str., 28",
+     "postcode": "96450",
+     "city": "Coburg",
+     "lat": 50.273547,
+     "lon": 10.960676
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/collenberg-pfeifer",
+   "locations": [
+    {
+     "name": "EURONICS Pfeifer",
+     "street": "Hauptstr., 43",
+     "postcode": "97903",
+     "city": "Collenberg",
+     "lat": 49.771858,
+     "lon": 9.330582
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/cunewalde-brueckner",
+   "locations": [
+    {
+     "name": "EURONICS Brückner",
+     "street": "Hauptstr., 33",
+     "postcode": "02733",
+     "city": "Cunewalde",
+     "lat": 51.09822,
+     "lon": 14.50417
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/dannenberg-schmidtke",
+   "locations": [
+    {
+     "name": "EURONICS Schmidtke",
+     "street": "Marschtorstr., 47",
+     "postcode": "29451",
+     "city": "Dannenberg",
+     "lat": 53.10049,
+     "lon": 11.09847
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/delbrueck-kersting",
+   "locations": [
+    {
+     "name": "EURONICS Hausgeräte",
+     "street": "Waßmannsweg, 3",
+     "postcode": "33129",
+     "city": "Delbrück",
+     "lat": 51.761435,
+     "lon": 8.555565
+    },
+    {
+     "name": "EURONICS OWL | Abhollager",
+     "street": "Waßmannsweg, 3",
+     "postcode": "33129",
+     "city": "Delbrück",
+     "lat": 51.764442,
+     "lon": 8.574176
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/demmin-drewes",
+   "locations": [
+    {
+     "name": "EURONICS Drewes",
+     "street": "Baumannstr., 1",
+     "postcode": "17109",
+     "city": "Demmin",
+     "lat": 53.906908,
+     "lon": 13.027485
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/dietfurt-christoph-elektro",
+   "locations": [
+    {
+     "name": "christoph elektro & netzwerktechnik GmbH",
+     "street": "Hauptstr., 46",
+     "postcode": "92345",
+     "city": "Dietfurt",
+     "lat": 49.034421,
+     "lon": 11.590043
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/dingolfing-widbiller",
+   "locations": [
+    {
+     "name": "Euronics WIDBILLER",
+     "street": "Bayernwerkstr., 11",
+     "postcode": "84130",
+     "city": "Dingolfing",
+     "lat": 48.63816,
+     "lon": 12.48802
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/donzdorf-hummel",
+   "locations": [
+    {
+     "name": "EURONICS Hummel",
+     "street": "Mittelmühlgasse, 1",
+     "postcode": "73072",
+     "city": "Donzdorf",
+     "lat": 48.68674,
+     "lon": 9.80897
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/dormagen-sieberichs",
+   "locations": [
+    {
+     "name": "EURONICS Sieberichs",
+     "street": "Dorfstr., 4",
+     "postcode": "41540",
+     "city": "Dormagen",
+     "lat": 51.066093,
+     "lon": 6.813934
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/dornstetten-braun",
+   "locations": [
+    {
+     "name": "EURONICS Braun GmbH",
+     "street": "Freudenstädter Str., 28",
+     "postcode": "72280",
+     "city": "Dornstetten",
+     "lat": 48.47358,
+     "lon": 8.49661
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/dortmund-breitenstein",
+   "locations": [
+    {
+     "name": "BREITENSTEIN",
+     "street": "Wittener Str., 59",
+     "postcode": "44149",
+     "city": "Dortmund",
+     "lat": 51.50694,
+     "lon": 7.42111
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/dresden-girrbach-haustechnik",
+   "locations": [
+    {
+     "name": "EURONICS Girrbach Hausgeräte",
+     "street": "Borsbergstr., 16",
+     "postcode": "01309",
+     "city": "Dresden",
+     "lat": 51.0448,
+     "lon": 13.775623
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/dueren-gunkel",
+   "locations": [
+    {
+     "name": "EURONICS Gunkel",
+     "street": "Wirtelstr., 28",
+     "postcode": "52349",
+     "city": "Düren",
+     "lat": 50.80421,
+     "lon": 6.48474
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/duesseldorf-granderath",
+   "locations": [
+    {
+     "name": "Euronics Granderath",
+     "street": "Worringer Str., 5",
+     "postcode": "40211",
+     "city": "Düsseldorf",
+     "lat": 51.229072,
+     "lon": 6.796623
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/duisburg-haas",
+   "locations": [
+    {
+     "name": "EURONICS Haas",
+     "street": "Mündelheimer Str., 11",
+     "postcode": "47259",
+     "city": "Duisburg",
+     "lat": 51.37064,
+     "lon": 6.75032
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/duisburg-rheinhausen-slizewski",
+   "locations": [
+    {
+     "name": "EURONICS Slizewski",
+     "street": "Friedrich-Alfred-Str., 53",
+     "postcode": "47226",
+     "city": "Duisburg",
+     "lat": 51.41195,
+     "lon": 6.714865
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/ebern-dietz",
+   "locations": [
+    {
+     "name": "Euronics Dietz",
+     "street": "Bahnhofstr., 9",
+     "postcode": "96106",
+     "city": "Ebern",
+     "lat": 50.09762,
+     "lon": 10.79316
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/eckental-engelhardt",
+   "locations": [
+    {
+     "name": "Engelhardt",
+     "street": "Eschenauer Hauptstr., 51",
+     "postcode": "90542",
+     "city": "Eckental",
+     "lat": 49.57446,
+     "lon": 11.20036
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/ehg",
+   "locations": [
+    {
+     "name": "EURONICS online",
+     "street": "Elseyer Str., 12-14",
+     "postcode": "58119",
+     "city": "Hagen",
+     "lat": 51.36275,
+     "lon": 7.55793
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/einbeck-broedner",
+   "locations": [
+    {
+     "name": "Brödner",
+     "street": "Neuer Markt, 10",
+     "postcode": "37574",
+     "city": "Einbeck",
+     "lat": 51.818007,
+     "lon": 9.868585
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/eitorf-meis",
+   "locations": [
+    {
+     "name": "Radio Elektro Meis",
+     "street": "Goethestrasse, 13",
+     "postcode": "53783",
+     "city": "Eitorf",
+     "lat": 50.771197,
+     "lon": 7.448435
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/enger-althoff",
+   "locations": [
+    {
+     "name": "EURONICS Althoff",
+     "street": "Bahnhofstr., 1-3",
+     "postcode": "32130",
+     "city": "Enger",
+     "lat": 52.14131,
+     "lon": 8.55987
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/erbach-braun",
+   "locations": [
+    {
+     "name": "EURONICS Braun",
+     "street": "Ehinger Str., 57",
+     "postcode": "89155",
+     "city": "Erbach",
+     "lat": 48.32244,
+     "lon": 9.89075
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/erkner-bild-und-funk",
+   "locations": [
+    {
+     "name": "EURONICS Bild & Funk",
+     "street": "Neu Zittauer Str., 41",
+     "postcode": "15537",
+     "city": "Erkner",
+     "lat": 52.410968,
+     "lon": 13.753028
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/ermke-grote",
+   "locations": [
+    {
+     "name": "EURONICS Grote-Ermke",
+     "street": "Matrumer Weg, 3",
+     "postcode": "49696",
+     "city": "Ermke",
+     "lat": 52.838463,
+     "lon": 7.891609
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/everswinkel-mo",
+   "locations": [
+    {
+     "name": "EURONICS MO",
+     "street": "Hovestraße, 20",
+     "postcode": "48351",
+     "city": "Everswinkel",
+     "lat": 51.92719,
+     "lon": 7.847189
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/falkenberg-mehlsteibl",
+   "locations": [
+    {
+     "name": "EURONICS Mehlsteibl",
+     "street": "Schellenbruckstr., 15",
+     "postcode": "84307",
+     "city": "Eggenfelden",
+     "lat": 48.40101,
+     "lon": 12.75116
+    },
+    {
+     "name": "Euronics Mehlsteibl",
+     "street": "Eggenfeldener Str., 23",
+     "postcode": "84326",
+     "city": "Falkenberg",
+     "lat": 48.46212,
+     "lon": 12.73012
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/felsberg-winzenburg",
+   "locations": [
+    {
+     "name": "Winzenburg",
+     "street": "Steinweg, 15",
+     "postcode": "34587",
+     "city": "Felsberg",
+     "lat": 51.134019,
+     "lon": 9.42807
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/finsterwalde-henze",
+   "locations": [
+    {
+     "name": "HD elektronic Finsterwalde",
+     "street": "A.-Bebel-Str., 3",
+     "postcode": "03238",
+     "city": "Finsterwalde",
+     "lat": 51.633312,
+     "lon": 13.708967
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/frankenthal-fuerst-helbig",
+   "locations": [
+    {
+     "name": "EURONICS Fürst-Helbig",
+     "street": "Speyerer Str., 48",
+     "postcode": "67227",
+     "city": "Frankenthal",
+     "lat": 49.532693,
+     "lon": 8.354034
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/frankfurt-lippert",
+   "locations": [
+    {
+     "name": "EURONICS Lippert",
+     "street": "Manderscheider Str., 1",
+     "postcode": "60529",
+     "city": "Frankfurt am Main",
+     "lat": 50.087729,
+     "lon": 8.579285
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/frankfurt-technikstudio",
+   "locations": [
+    {
+     "name": "EURONICS Technik Studio",
+     "street": "Berner Str., 11-15",
+     "postcode": "60437",
+     "city": "Frankfurt am Main",
+     "lat": 50.19277,
+     "lon": 8.66392
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/friedberg-loew",
+   "locations": [
+    {
+     "name": "EURONICS Löw",
+     "street": "Ludwigstr., 7",
+     "postcode": "86316",
+     "city": "Friedberg",
+     "lat": 48.35509,
+     "lon": 10.9803
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/fuerstenau-haverkamp",
+   "locations": [
+    {
+     "name": "EURONICS Haverkamp",
+     "street": "Große Straße, 18",
+     "postcode": "49584",
+     "city": "Fürstenau",
+     "lat": 52.516895,
+     "lon": 7.675845
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/gaertringen-buehler",
+   "locations": [
+    {
+     "name": "EURONICS Bühler in Gärtringen",
+     "street": "Bismarckstr., 35",
+     "postcode": "71116",
+     "city": "Gärtringen",
+     "lat": 48.64253,
+     "lon": 8.89575
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/garding-hoffmann",
+   "locations": [
+    {
+     "name": "EURONICS Hoffmann",
+     "street": "Süderstr., 53",
+     "postcode": "25836",
+     "city": "Garding",
+     "lat": 54.32737,
+     "lon": 8.7825
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/geiersthal-berging-mies",
+   "locations": [
+    {
+     "name": "Mies",
+     "street": "Alte Kreisstr., 7",
+     "postcode": "94244",
+     "city": "Geiersthal-Berging",
+     "lat": 49.032,
+     "lon": 12.99091
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/geisa-andritschke",
+   "locations": [
+    {
+     "name": "EURONICS Andritschke",
+     "street": "Rhönstr., 14",
+     "postcode": "36419",
+     "city": "Geisa",
+     "lat": 50.715285,
+     "lon": 9.956898
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/gelnhausen-euler",
+   "locations": [
+    {
+     "name": "Euronics Service Point Euler",
+     "street": "Berliner Str., 53",
+     "postcode": "63571",
+     "city": "Gelnhausen",
+     "lat": 50.20332,
+     "lon": 9.18462
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/gevelsberg-meckel",
+   "locations": [
+    {
+     "name": "EURONICS Meckel",
+     "street": "Mittelstrasse, 34",
+     "postcode": "58285",
+     "city": "Gevelsberg",
+     "lat": 51.31913,
+     "lon": 7.33752
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/glueckstadt-goike",
+   "locations": [
+    {
+     "name": "Euronics Hausgeräte Goike",
+     "street": "Große Kremper Straße, 33",
+     "postcode": "25348",
+     "city": "Glückstadt",
+     "lat": 53.789361,
+     "lon": 9.42583
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/goch-thonnet",
+   "locations": [
+    {
+     "name": "EURONICS Thonnet",
+     "street": "Bahnhofstr., 30",
+     "postcode": "47574",
+     "city": "Goch",
+     "lat": 51.67862,
+     "lon": 6.16048
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/grafenau-loibl",
+   "locations": [
+    {
+     "name": "EURONICS Loibl",
+     "street": "Bahnhofstr., 9",
+     "postcode": "94481",
+     "city": "Grafenau",
+     "lat": 48.855589,
+     "lon": 13.395404
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/gransee-fitzner",
+   "locations": [
+    {
+     "name": "EURONICS Fitzner",
+     "street": "Rudolf-Breitscheid-Str., 49",
+     "postcode": "16775",
+     "city": "Gransee",
+     "lat": 53.007183,
+     "lon": 13.153522
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/grimmen-schneider",
+   "locations": [
+    {
+     "name": "Schneider",
+     "street": "Mühlenstr., 7",
+     "postcode": "18507",
+     "city": "Grimmen",
+     "lat": 54.11244,
+     "lon": 13.04177
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/grossmehring-daubmeier",
+   "locations": [
+    {
+     "name": "EURONICS Daubmeier",
+     "street": "Marienplatz, 6",
+     "postcode": "85098",
+     "city": "Großmehring",
+     "lat": 48.765356,
+     "lon": 11.53485
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/guetersloh-buecker",
+   "locations": [
+    {
+     "name": "Bücker Hausgeräte",
+     "street": "Holunderstr., 29a",
+     "postcode": "33378",
+     "city": "Rheda-Wiedenbrück",
+     "lat": 51.850207,
+     "lon": 8.322586
+    },
+    {
+     "name": "EURONICS Bücker",
+     "street": "Münsterstr., 20-22",
+     "postcode": "33428",
+     "city": "Harsewinkel",
+     "lat": 51.96075,
+     "lon": 8.22265
+    },
+    {
+     "name": "EURONICS Bücker",
+     "street": "Kaiserstr., 2",
+     "postcode": "33829",
+     "city": "Borgholzhausen",
+     "lat": 52.103107,
+     "lon": 8.301758
+    },
+    {
+     "name": "EURONICS XXL Bücker",
+     "street": "Dammstraße, 39",
+     "postcode": "33332",
+     "city": "Gütersloh",
+     "lat": 51.897941,
+     "lon": 8.373487
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/gutenstetten-pahres-berger",
+   "locations": [
+    {
+     "name": "EURONICS Berger",
+     "street": "Neustädter Str., 10",
+     "postcode": "91468",
+     "city": "Gutenstetten-Pahres",
+     "lat": 49.618409,
+     "lon": 10.654156
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/hage-roolfs",
+   "locations": [
+    {
+     "name": "EURONICS Roolfs",
+     "street": "Halbemonder Str., 6",
+     "postcode": "26524",
+     "city": "Hage",
+     "lat": 53.60056,
+     "lon": 7.284318
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/hagen-berlet",
+   "locations": [
+    {
+     "name": "EURONICS Berlet",
+     "street": "Hans-Böckler-Str., 4",
+     "postcode": "59423",
+     "city": "Unna",
+     "lat": 51.530288,
+     "lon": 7.669309
+    },
+    {
+     "name": "EURONICS Berlet",
+     "street": "Opmünder Weg, 65-67",
+     "postcode": "59494",
+     "city": "Soest",
+     "lat": 51.568264,
+     "lon": 8.126739
+    },
+    {
+     "name": "EURONICS Berlet",
+     "street": "Stembergstr., 60",
+     "postcode": "59755",
+     "city": "Arnsberg-Neheim",
+     "lat": 51.44403,
+     "lon": 7.967696
+    },
+    {
+     "name": "EURONICS Berlet",
+     "street": "An der Bummannsburg, 6",
+     "postcode": "59192",
+     "city": "Bergkamen",
+     "lat": 51.650917,
+     "lon": 7.67539
+    },
+    {
+     "name": "EURONICS Berlet",
+     "street": "Wefelshohler Str., 1",
+     "postcode": "58511",
+     "city": "Lüdenscheid",
+     "lat": 51.21162,
+     "lon": 7.64613
+    },
+    {
+     "name": "EURONICS Berlet",
+     "street": "Gasstr., 12",
+     "postcode": "58256",
+     "city": "Ennepetal",
+     "lat": 51.298564,
+     "lon": 7.35317
+    },
+    {
+     "name": "EURONICS Berlet",
+     "street": "Elseyer Str., 12-14",
+     "postcode": "58119",
+     "city": "Hagen",
+     "lat": 51.36275,
+     "lon": 7.55793
+    },
+    {
+     "name": "EURONICS Berlet Mobile",
+     "street": "Querenburger Höhe, 125",
+     "postcode": "44801",
+     "city": "Bochum (Uni-Center)",
+     "lat": 51.448292,
+     "lon": 7.257372
+    },
+    {
+     "name": "EURONICS Berlet/Bergerhoff",
+     "street": "Wiehler Str., 24",
+     "postcode": "51545",
+     "city": "Waldbröl",
+     "lat": 50.886093,
+     "lon": 7.635528
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/hamburg-buddenhagen",
+   "locations": [
+    {
+     "name": "Buddenhagen Ahrensburg",
+     "street": "Hamburger Strasse, 57",
+     "postcode": "22926",
+     "city": "Ahrensburg",
+     "lat": 53.668668,
+     "lon": 10.231003
+    },
+    {
+     "name": "Buddenhagen Filiale Alstertal",
+     "street": "Saseler Chaussee, 156",
+     "postcode": "22393",
+     "city": "Hamburg Alstertal",
+     "lat": 53.650237,
+     "lon": 10.105134
+    },
+    {
+     "name": "Buddenhagen Filiale Elbvororte",
+     "street": "Osdorfer Landstrasse, 251b",
+     "postcode": "22549",
+     "city": "Hamburg Elbvororte",
+     "lat": 53.573026,
+     "lon": 9.841014
+    },
+    {
+     "name": "Buddenhagen Wentorf",
+     "street": "Südring, 62",
+     "postcode": "21465",
+     "city": "Wentorf bei Hamburg",
+     "lat": 53.487976,
+     "lon": 10.269715
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/hamburg-stahn",
+   "locations": [
+    {
+     "name": "EURONICS Stahn",
+     "street": "Alsterdorfer Str., 31",
+     "postcode": "22299",
+     "city": "Hamburg",
+     "lat": 53.59629,
+     "lon": 9.99704
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/hamm-hensel",
+   "locations": [
+    {
+     "name": "EURONICS Hensel",
+     "street": "Caldenhofer Weg, 157",
+     "postcode": "59063",
+     "city": "Hamm",
+     "lat": 51.676086,
+     "lon": 7.839062
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/haslach-geissler",
+   "locations": [
+    {
+     "name": "EURONICS Geissler",
+     "street": "Mühlenbacher Str., 9",
+     "postcode": "77716",
+     "city": "Haslach im Kinzigtal",
+     "lat": 48.275163,
+     "lon": 8.088624
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/hatzfeld-gloeser",
+   "locations": [
+    {
+     "name": "Glöser",
+     "street": "Edertalstr., 23",
+     "postcode": "35116",
+     "city": "Hatzfeld",
+     "lat": 50.988884,
+     "lon": 8.549141
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/havelberg-grunwald",
+   "locations": [
+    {
+     "name": "Grunwald",
+     "street": "Scabellstr., 3-4",
+     "postcode": "39539",
+     "city": "Hansestadt Havelberg",
+     "lat": 52.825774,
+     "lon": 12.074049
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/heide-hansen-roppelt",
+   "locations": [
+    {
+     "name": "Euronics Hansen & Roppelt",
+     "street": "Husumer Str., 93",
+     "postcode": "25746",
+     "city": "Heide",
+     "lat": 54.202916,
+     "lon": 9.088875
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/henstedt-ulzburg-dreissig",
+   "locations": [
+    {
+     "name": "Euronics Dreissig",
+     "street": "Hamburger Straße, 91",
+     "postcode": "24558",
+     "city": "Henstedt-Ulzburg",
+     "lat": 53.791714,
+     "lon": 9.981607
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/herborn-bollmann",
+   "locations": [
+    {
+     "name": "EURONICS Bollmann",
+     "street": "Austr., 65",
+     "postcode": "35745",
+     "city": "Herborn",
+     "lat": 50.672368,
+     "lon": 8.305467
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/herbrechtingen-bertz",
+   "locations": [
+    {
+     "name": "EURONICS Bertz Inh. Andreas Tschente",
+     "street": "Lange Str., 43",
+     "postcode": "89542",
+     "city": "Herbrechtingen",
+     "lat": 48.62201,
+     "lon": 10.17607
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/herdorf-orlik",
+   "locations": [
+    {
+     "name": "EURONICS Orlik",
+     "street": "Alte Hütte, 16",
+     "postcode": "57562",
+     "city": "Herdorf",
+     "lat": 50.781561,
+     "lon": 7.95735
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/hermeskeil-tccenter-loch",
+   "locations": [
+    {
+     "name": "EURONICS Hermeskeil",
+     "street": "Schulstr., 4",
+     "postcode": "54411",
+     "city": "Hermeskeil",
+     "lat": 49.654988,
+     "lon": 6.945444
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/hermsdorf-electronic-stadtroda",
+   "locations": [
+    {
+     "name": "electronic Stadtroda",
+     "street": "Eisenberger Straße, 87",
+     "postcode": "07629",
+     "city": "Hermsdorf",
+     "lat": 50.90078,
+     "lon": 11.856086
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/herrenberg-eichhorn-und-wimmer",
+   "locations": [
+    {
+     "name": "EURONICS Eichhorn und Wimmer",
+     "street": "Walther-Knoll-Straße, 1",
+     "postcode": "71083",
+     "city": "Herrenberg",
+     "lat": 48.59312,
+     "lon": 8.86397
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/herzberg-gottschlich",
+   "locations": [
+    {
+     "name": "EURONICS Gottschlich",
+     "street": "Osteroderstr., 11 a-c",
+     "postcode": "37412",
+     "city": "Herzberg",
+     "lat": 51.657338,
+     "lon": 10.333942
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/herzogenrath-tele-digital",
+   "locations": [
+    {
+     "name": "EURONICS Langer",
+     "street": "Weststr., 9-17",
+     "postcode": "52134",
+     "city": "Herzogenrath",
+     "lat": 50.83104,
+     "lon": 6.09011
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/hettstedt-walbeck-elektrofunk",
+   "locations": [
+    {
+     "name": "EURONICS Elektrofunk",
+     "street": "Kämmritzer Weg, 20",
+     "postcode": "06333",
+     "city": "Hettstedt",
+     "lat": 51.656464,
+     "lon": 11.48654
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/hilden-gemein",
+   "locations": [
+    {
+     "name": "EURONICS Gemein",
+     "street": "Hochdahler Str., 89",
+     "postcode": "40724",
+     "city": "Hilden",
+     "lat": 51.17447,
+     "lon": 6.939831
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/hoetensleben-kohlhase",
+   "locations": [
+    {
+     "name": "Euronics Kohlhase",
+     "street": "Barneberger Straße, 3",
+     "postcode": "39393",
+     "city": "Hötensleben",
+     "lat": 52.119319,
+     "lon": 11.024172
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/hoevelhof-fischer",
+   "locations": [
+    {
+     "name": "EURONICS Fischer Hövelhof",
+     "street": "Bahnhofstr., 9",
+     "postcode": "33161",
+     "city": "Hövelhof",
+     "lat": 51.822752,
+     "lon": 8.657941
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/hof-tekha",
+   "locations": [
+    {
+     "name": "Tekha",
+     "street": "Ascher Str., 4",
+     "postcode": "95028",
+     "city": "Hof",
+     "lat": 50.31368,
+     "lon": 11.92361
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/hohenneuendorf-citynewtec",
+   "locations": [
+    {
+     "name": "EURONICS City",
+     "street": "Berliner Str., 4A",
+     "postcode": "16540",
+     "city": "Hohen Neuendorf bei Berlin",
+     "lat": 52.661952,
+     "lon": 13.287129
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/hohenwestedt-sitko-und-rohwer",
+   "locations": [
+    {
+     "name": "EURONICS Sitko & Rohwer",
+     "street": "Wilhelmstr., 1",
+     "postcode": "24594",
+     "city": "Hohenwestedt",
+     "lat": 54.09073,
+     "lon": 9.653442
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/holzweissig-fiedler",
+   "locations": [
+    {
+     "name": "Fernseh-Fiedler",
+     "street": "Glück-Auf-Str., 26",
+     "postcode": "06808",
+     "city": "Holzweißig",
+     "lat": 51.60197,
+     "lon": 12.30759
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/huenfeld-dietechnik",
+   "locations": [
+    {
+     "name": "EURONICS Hünfeld",
+     "street": "Josefstr., 6",
+     "postcode": "36088",
+     "city": "Hünfeld",
+     "lat": 50.672128,
+     "lon": 9.767926
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/isny-durach",
+   "locations": [
+    {
+     "name": "EURONICS Durach",
+     "street": "Wassertorstr., 18",
+     "postcode": "88316",
+     "city": "Isny",
+     "lat": 47.693056,
+     "lon": 10.040168
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/juenkerath-mauer",
+   "locations": [
+    {
+     "name": "Mauer",
+     "street": "Kölnerstr., 97",
+     "postcode": "54584",
+     "city": "Jünkerath",
+     "lat": 50.346876,
+     "lon": 6.571366
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/jueterbog-knaack",
+   "locations": [
+    {
+     "name": "Knaack & Team",
+     "street": "Mönchenstr., 27",
+     "postcode": "14913",
+     "city": "Jüterbog",
+     "lat": 51.9918,
+     "lon": 13.07919
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/kaarst-luettkopf",
+   "locations": [
+    {
+     "name": "EURONICS Lüttkopf",
+     "street": "Grünstr., 17",
+     "postcode": "41564",
+     "city": "Kaarst",
+     "lat": 51.229365,
+     "lon": 6.623741
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/kaisersesch-elwig",
+   "locations": [
+    {
+     "name": "EURONICS Elwig",
+     "street": "Poststr., 23",
+     "postcode": "56759",
+     "city": "Kaisersesch",
+     "lat": 50.230109,
+     "lon": 7.138563
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/kaiserslautern-kafitz-antes",
+   "locations": [
+    {
+     "name": "EURONICS Kafitz & Antes",
+     "street": "Klosterstr., 15",
+     "postcode": "67655",
+     "city": "Kaiserslautern",
+     "lat": 49.446348,
+     "lon": 7.773536
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/kassel-schaefer",
+   "locations": [
+    {
+     "name": "EURONICS Schäfer",
+     "street": "Altenbaunaerstr., 98",
+     "postcode": "34132",
+     "city": "Kassel",
+     "lat": 51.27486,
+     "lon": 9.448447
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/kassel-wolfhagen-alheid",
+   "locations": [
+    {
+     "name": "EURONICS Alheid",
+     "street": "Karthäuserstr., 6",
+     "postcode": "34117",
+     "city": "Kassel",
+     "lat": 51.313877,
+     "lon": 9.485917
+    },
+    {
+     "name": "EURONICS Alheid",
+     "street": "Bunsenstr., 8",
+     "postcode": "34466",
+     "city": "Wolfhagen",
+     "lat": 51.33223,
+     "lon": 9.17473
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/kempten-hartmann",
+   "locations": [
+    {
+     "name": "EURONICS Hartmann",
+     "street": "Heiligkreuzer Str., 16-17",
+     "postcode": "87439",
+     "city": "Kempten",
+     "lat": 47.735707,
+     "lon": 10.30137
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/kirchheim-rembold",
+   "locations": [
+    {
+     "name": "EURONICS Rembold",
+     "street": "Uhlandstr., 12",
+     "postcode": "74366",
+     "city": "Kirchheim",
+     "lat": 49.04081,
+     "lon": 9.14614
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/kirchseeon-perlak",
+   "locations": [
+    {
+     "name": "EURONICS Perlak",
+     "street": "Münchner Str., 1",
+     "postcode": "85614",
+     "city": "Kirchseeon",
+     "lat": 48.07164,
+     "lon": 11.88751
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/koethen-lux-team",
+   "locations": [
+    {
+     "name": "EURONICS Lux-Team",
+     "street": "Merziener Straße, 17",
+     "postcode": "06366",
+     "city": "Köthen (Anh.)",
+     "lat": 51.754312,
+     "lon": 11.998772
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/korbach-ageb-elektrotechnik",
+   "locations": [
+    {
+     "name": "EURONICS AGEB",
+     "street": "Klosterstr., 4",
+     "postcode": "34497",
+     "city": "Korbach",
+     "lat": 51.273556,
+     "lon": 8.872029
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/kroev-endt",
+   "locations": [
+    {
+     "name": "EURONICS Endt",
+     "street": "Bergstr., 2",
+     "postcode": "54536",
+     "city": "Kröv",
+     "lat": 49.97959,
+     "lon": 7.085154
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/laehden-ot-holte-lastrup-grote",
+   "locations": [
+    {
+     "name": "EURONICS Grote",
+     "street": "Holter Hauptstr., 3",
+     "postcode": "49774",
+     "city": "Holte-Lastrup",
+     "lat": 52.736237,
+     "lon": 7.620957
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/lahnstein-huster",
+   "locations": [
+    {
+     "name": "EURONICS Huster",
+     "street": "Frühmesserstr., 2",
+     "postcode": "56112",
+     "city": "Lahnstein",
+     "lat": 50.300687,
+     "lon": 7.605086
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/lahr-billian",
+   "locations": [
+    {
+     "name": "EURONICS Billian-Griesbaum",
+     "street": "Reichenb. Hauptstr., 70",
+     "postcode": "77933",
+     "city": "Lahr",
+     "lat": 48.32708,
+     "lon": 7.93117
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/langenlonsheim-hieronimus",
+   "locations": [
+    {
+     "name": "Hieronimus Hausgeräte",
+     "street": "Naheweinstr., 6",
+     "postcode": "55450",
+     "city": "Langenlonsheim",
+     "lat": 49.887413,
+     "lon": 7.899929
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/langenzenn-jakob",
+   "locations": [
+    {
+     "name": "Euronics Jakob",
+     "street": "Nürnberger Straße, 49",
+     "postcode": "90579",
+     "city": "Langenzenn",
+     "lat": 49.496439,
+     "lon": 10.805903
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/leichlingen-fiebrandt",
+   "locations": [
+    {
+     "name": "EURONICS Fiebrandt",
+     "street": "Brückenstr., 4 - 6",
+     "postcode": "42799",
+     "city": "Leichlingen",
+     "lat": 51.10582,
+     "lon": 7.01362
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/lennestadt-kappe",
+   "locations": [
+    {
+     "name": "EURONICS Kappe",
+     "street": "Kölner Straße, 114",
+     "postcode": "57368",
+     "city": "Lennestadt",
+     "lat": 51.142599,
+     "lon": 8.018118
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/leverkusen-nerger-und-schilling",
+   "locations": [
+    {
+     "name": "Nerger + Schilling",
+     "street": "Gezelinallee, 74",
+     "postcode": "51375",
+     "city": "Leverkusen",
+     "lat": 51.036911,
+     "lon": 7.042595
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/leverkusen-stolz",
+   "locations": [
+    {
+     "name": "EURONICS Stolz",
+     "street": "Quettinger Str., 20-24",
+     "postcode": "51381",
+     "city": "Leverkusen",
+     "lat": 51.063393,
+     "lon": 7.042373
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/lingen-lengerich",
+   "locations": [
+    {
+     "name": "EURONICS BvL",
+     "street": "Lindenstr., 22",
+     "postcode": "49808",
+     "city": "Lingen",
+     "lat": 52.5155,
+     "lon": 7.31514
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/lingen-portheine",
+   "locations": [
+    {
+     "name": "EURONICS Portheine",
+     "street": "Binnenstr., 24",
+     "postcode": "49811",
+     "city": "Lingen",
+     "lat": 52.562477,
+     "lon": 7.366389
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/lippstadt-schumacher",
+   "locations": [
+    {
+     "name": "EURONICS Geseke",
+     "street": "Bäckstr., 4",
+     "postcode": "59590",
+     "city": "Geseke",
+     "lat": 51.64149,
+     "lon": 8.50898
+    },
+    {
+     "name": "EURONICS Lippstadt",
+     "street": "Blumenstr., 8",
+     "postcode": "59555",
+     "city": "Lippstadt",
+     "lat": 51.671288,
+     "lon": 8.345328
+    },
+    {
+     "name": "EURONICS Rietberg",
+     "street": "Westerwieher Straße, 33",
+     "postcode": "33397",
+     "city": "Rietberg",
+     "lat": 51.812315,
+     "lon": 8.434395
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/loedla-kunerl",
+   "locations": [
+    {
+     "name": "EURONICS Kunerl",
+     "street": "Lödlaer Chaussee, 3c",
+     "postcode": "04617",
+     "city": "Lödla",
+     "lat": 50.99846,
+     "lon": 12.40658
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/mainz-bauer",
+   "locations": [
+    {
+     "name": "EURONICS Bauer",
+     "street": "Rheinhessenstr, 7",
+     "postcode": "55129",
+     "city": "Mainz",
+     "lat": 49.97027,
+     "lon": 8.26999
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/markt-indersdorf-gruber-und-depre",
+   "locations": [
+    {
+     "name": "EURONICS Gruber & Depre OHG",
+     "street": "Seilerstr., 6a",
+     "postcode": "85229",
+     "city": "Markt Indersdorf",
+     "lat": 48.347059,
+     "lon": 11.381066
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/marktredwitz-plischke",
+   "locations": [
+    {
+     "name": "EURONICS Plischke",
+     "street": "Klingerstr., 3-5",
+     "postcode": "95615",
+     "city": "Marktredwitz",
+     "lat": 50.00022,
+     "lon": 12.08145
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/meerbusch-hartwig",
+   "locations": [
+    {
+     "name": "EURONICS Hartwig",
+     "street": "Düsseldorfer Str., 19",
+     "postcode": "40667",
+     "city": "Meerbusch",
+     "lat": 51.2499,
+     "lon": 6.69034
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/melle-mestemacher",
+   "locations": [
+    {
+     "name": "EURONICS Mestemacher",
+     "street": "Kampstr., 3-5",
+     "postcode": "49324",
+     "city": "Melle",
+     "lat": 52.20387,
+     "lon": 8.34238
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/mengen-buck-mengen",
+   "locations": [
+    {
+     "name": "EURONICS Buck-Mengen",
+     "street": "Hauptstr., 39/41",
+     "postcode": "88512",
+     "city": "Mengen",
+     "lat": 48.051393,
+     "lon": 9.333051
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/merseburg-shop-und-service",
+   "locations": [
+    {
+     "name": "EURONICS Willing",
+     "street": "Klobikauer Str., 14",
+     "postcode": "06217",
+     "city": "Merseburg",
+     "lat": 51.353221,
+     "lon": 11.9881
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/mettlach-orscholz-schulz",
+   "locations": [
+    {
+     "name": "EURONICS Kettenhofen",
+     "street": "Cloefstr., 49a",
+     "postcode": "66693",
+     "city": "Mettlach-Orscholz",
+     "lat": 49.50533,
+     "lon": 6.53041
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/miesbach-thomas",
+   "locations": [
+    {
+     "name": "EURONICS Thomas",
+     "street": "Rosenheimer Str., 9",
+     "postcode": "83714",
+     "city": "Miesbach",
+     "lat": 47.79007,
+     "lon": 11.83788
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/mindelheim-der-laden",
+   "locations": [
+    {
+     "name": "Der Laden",
+     "street": "Industriestr., 12",
+     "postcode": "87719",
+     "city": "Mindelheim",
+     "lat": 48.042133,
+     "lon": 10.501234
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/moenchengladbach-gebr-geiser",
+   "locations": [
+    {
+     "name": "EURONICS Gebr. Geiser",
+     "street": "Talstr., 9",
+     "postcode": "41199",
+     "city": "Mönchengladbach",
+     "lat": 51.132617,
+     "lon": 6.455645
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/moosburg-stampfl",
+   "locations": [
+    {
+     "name": "EURONICS Stampfl",
+     "street": "Weingraben, 2",
+     "postcode": "85368",
+     "city": "Moosburg",
+     "lat": 48.466837,
+     "lon": 11.935405
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/mosbach-betzwieser",
+   "locations": [
+    {
+     "name": "EURONICS Betzwieser",
+     "street": "Odenwaldstr., 31",
+     "postcode": "74821",
+     "city": "Mosbach",
+     "lat": 49.35958,
+     "lon": 9.14875
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/nattheim-elektro-center",
+   "locations": [
+    {
+     "name": "EURONICS Elektrocenter-Nattheim",
+     "street": "Hebelstr., 2",
+     "postcode": "89564",
+     "city": "Nattheim",
+     "lat": 48.70146,
+     "lon": 10.2334
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/neu-anspach-na-mobile",
+   "locations": [
+    {
+     "name": "EURONICS N.A. Mobile",
+     "street": "Hinterm Graben, 14",
+     "postcode": "35708",
+     "city": "Haiger",
+     "lat": 50.742555,
+     "lon": 8.205737
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/neubrandenburg-nehls",
+   "locations": [
+    {
+     "name": "EURONICS Nehls",
+     "street": "Kranichstrasse, 2",
+     "postcode": "17034",
+     "city": "Neubrandenburg",
+     "lat": 53.56537,
+     "lon": 13.268509
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/neudenau-keller",
+   "locations": [
+    {
+     "name": "euronics SERVICE-POINT Keller",
+     "street": "Hauptstraße, 2",
+     "postcode": "74861",
+     "city": "Neudenau",
+     "lat": 49.290771,
+     "lon": 9.269771
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/neuhaus-elbe-tewes",
+   "locations": [
+    {
+     "name": "EURONICS Tewes",
+     "street": "Poststraße, 2",
+     "postcode": "19273",
+     "city": "Neuhaus/Elbe",
+     "lat": 53.283679,
+     "lon": 10.930459
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/neumuenster-lorenzen",
+   "locations": [
+    {
+     "name": "EURONICS Lorenzen",
+     "street": "Mühlenstr., 8",
+     "postcode": "24539",
+     "city": "Neumünster",
+     "lat": 54.05461,
+     "lon": 9.96658
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/neustadt-bauer",
+   "locations": [
+    {
+     "name": "EURONICS Bauer",
+     "street": "Eisfelder Str., 48",
+     "postcode": "96465",
+     "city": "Neustadt",
+     "lat": 50.335941,
+     "lon": 11.116881
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/neustadt-citymedia",
+   "locations": [
+    {
+     "name": "EURONICS CityMedia & Ripken",
+     "street": "Marktstr., 28",
+     "postcode": "35279",
+     "city": "Neustadt",
+     "lat": 50.852737,
+     "lon": 9.115359
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/neuwied-schaefer",
+   "locations": [
+    {
+     "name": "EURONICS Schäfer",
+     "street": "Lindenstr., 28",
+     "postcode": "56566",
+     "city": "Neuwied",
+     "lat": 50.44735,
+     "lon": 7.54128
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/niederdorf-fernseh-gmbh",
+   "locations": [
+    {
+     "name": "EURONICS Fernseh GmbH",
+     "street": "Bahnhofstr., 12a",
+     "postcode": "09376",
+     "city": "Oelsnitz",
+     "lat": 50.72588,
+     "lon": 12.70302
+    },
+    {
+     "name": "EURONICS Fernseh GmbH",
+     "street": "Chemnitzer Str., 73",
+     "postcode": "09366",
+     "city": "Niederdorf",
+     "lat": 50.720281,
+     "lon": 12.784446
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/niesky-roehle",
+   "locations": [
+    {
+     "name": "EURONICS Röhle",
+     "street": "Rothenburger Straße, 13 a",
+     "postcode": "02906",
+     "city": "Niesky",
+     "lat": 51.29207,
+     "lon": 14.83449
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/nordhausen-gunst",
+   "locations": [
+    {
+     "name": "Gunst",
+     "street": "Jahnstraße, 51",
+     "postcode": "99734",
+     "city": "Nordhausen",
+     "lat": 51.501687,
+     "lon": 10.808486
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/nordheim-hippeli",
+   "locations": [
+    {
+     "name": "Kay Hippeli Euronics Service Point",
+     "street": "Korngasse, 11-13",
+     "postcode": "97647",
+     "city": "Nordheim",
+     "lat": 50.47951,
+     "lon": 10.18419
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/nordkirchen-dworak",
+   "locations": [
+    {
+     "name": "EURONICS Dworak",
+     "street": "Lüdinghauser Str., 62",
+     "postcode": "59394",
+     "city": "Nordkirchen",
+     "lat": 51.742537,
+     "lon": 7.516682
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/nordwalde-fissmann",
+   "locations": [
+    {
+     "name": "EURONICS Fissmann",
+     "street": "Emsdettener Str., 67",
+     "postcode": "48356",
+     "city": "Nordwalde",
+     "lat": 52.09032,
+     "lon": 7.48044
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/nuertingen-doster",
+   "locations": [
+    {
+     "name": "EURONICS Doster",
+     "street": "Nürtinger Str., 38",
+     "postcode": "72622",
+     "city": "Nürtingen-Neckarhausen",
+     "lat": 48.619591,
+     "lon": 9.315245
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/oberderdingen-weiss",
+   "locations": [
+    {
+     "name": "Elekro Weiß",
+     "street": "Brettener Straße, 2",
+     "postcode": "75038",
+     "city": "Oberderdingen",
+     "lat": 49.06274,
+     "lon": 8.8022
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/oberstdorf-geiger",
+   "locations": [
+    {
+     "name": "EURONICS Geiger",
+     "street": "Bahnhofplatz, 10",
+     "postcode": "87561",
+     "city": "Oberstdorf",
+     "lat": 47.410795,
+     "lon": 10.278513
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/oelde-busch",
+   "locations": [
+    {
+     "name": "Euronics Busch",
+     "street": "Bahnhofstr., 24",
+     "postcode": "59302",
+     "city": "Oelde",
+     "lat": 51.827658,
+     "lon": 8.143295
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/osnabrueck-pottharst",
+   "locations": [
+    {
+     "name": "EURONICS Pottharst",
+     "street": "In der Mark, 27",
+     "postcode": "49086",
+     "city": "Osnabrück",
+     "lat": 52.248936,
+     "lon": 8.105177
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/osterhofen-thierfelder",
+   "locations": [
+    {
+     "name": "EURONICS Thierfelder",
+     "street": "Plattlingerstr., 64",
+     "postcode": "94486",
+     "city": "Osterhofen",
+     "lat": 48.708789,
+     "lon": 13.010319
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/paderborn-cekic",
+   "locations": [
+    {
+     "name": "EURONICS Cekic",
+     "street": "Riemekestr., 48-50",
+     "postcode": "33102",
+     "city": "Paderborn",
+     "lat": 51.716328,
+     "lon": 8.74021
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/penig-bild-und-ton-kommunikation",
+   "locations": [
+    {
+     "name": "EURONICS Bild & Ton-Kommunikation",
+     "street": "Markt, 2",
+     "postcode": "09322",
+     "city": "Penig",
+     "lat": 50.933322,
+     "lon": 12.705675
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/penzberg-marksteiner",
+   "locations": [
+    {
+     "name": "EURONICS Marksteiner",
+     "street": "Bahnhofstrasse, 16",
+     "postcode": "82377",
+     "city": "Penzberg",
+     "lat": 47.749921,
+     "lon": 11.374198
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/pinneberg-roemer",
+   "locations": [
+    {
+     "name": "EURONICS Römer",
+     "street": "Kurt-Wagener-Straße, 2",
+     "postcode": "25337",
+     "city": "Elmshorn",
+     "lat": 53.746594,
+     "lon": 9.696155
+    },
+    {
+     "name": "EURONICS Römer",
+     "street": "Elmshorner Straße, 53",
+     "postcode": "25421",
+     "city": "Pinneberg",
+     "lat": 53.667036,
+     "lon": 9.79361
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/prenzlau-gottschalk",
+   "locations": [
+    {
+     "name": "EURONICS Gottschalk",
+     "street": "Neubrandenburger Str., 1b",
+     "postcode": "17291",
+     "city": "Prenzlau",
+     "lat": 53.317995,
+     "lon": 13.854254
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/pritzwalk-hacker",
+   "locations": [
+    {
+     "name": "Service-Point Hacker",
+     "street": "Rostocker Str., 5",
+     "postcode": "16928",
+     "city": "Pritzwalk",
+     "lat": 53.15862,
+     "lon": 12.17356
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/quakenbrueck-deters",
+   "locations": [
+    {
+     "name": "EURONICS Deters",
+     "street": "Kurt-Schmücker-Platz, 7",
+     "postcode": "49624",
+     "city": "Löningen",
+     "lat": 52.7336,
+     "lon": 7.75895
+    },
+    {
+     "name": "Euronics Deters",
+     "street": "Lange Str., 35",
+     "postcode": "49610",
+     "city": "Quakenbrück",
+     "lat": 52.676654,
+     "lon": 7.957369
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/quierschied-futuretech",
+   "locations": [
+    {
+     "name": "EURONICS Future-Tech GmbH & Co. KG",
+     "street": "Rathausstr., 12",
+     "postcode": "66287",
+     "city": "Quierschied",
+     "lat": 49.326625,
+     "lon": 7.050068
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/regensburg-hammedinger",
+   "locations": [
+    {
+     "name": "EURONICS Hammedinger",
+     "street": "Erzb.-Buchberger-Allee, 12",
+     "postcode": "93051",
+     "city": "Regensburg",
+     "lat": 49.00467,
+     "lon": 12.07901
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/reinbek-roemhild",
+   "locations": [
+    {
+     "name": "EURONICS Römhild",
+     "street": "Humboldtstr., 3",
+     "postcode": "21465",
+     "city": "Reinbek",
+     "lat": 53.52897,
+     "lon": 10.235184
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/reisbach-zellhuber",
+   "locations": [
+    {
+     "name": "EURONICS Zellhuber",
+     "street": "Siemensstr., 3",
+     "postcode": "94419",
+     "city": "Reisbach",
+     "lat": 48.567802,
+     "lon": 12.625476
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/rietberg-biermann",
+   "locations": [
+    {
+     "name": "Euronics Biermann",
+     "street": "Krumme Str., 13",
+     "postcode": "33397",
+     "city": "Rietberg",
+     "lat": 51.808262,
+     "lon": 8.423815
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/rinteln-kruse",
+   "locations": [
+    {
+     "name": "EURONICS Kruse",
+     "street": "Hauptstr., 35",
+     "postcode": "31737",
+     "city": "Rinteln",
+     "lat": 52.21191,
+     "lon": 9.04974
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/rodenberg-oberheide",
+   "locations": [
+    {
+     "name": "Elektrotechnik Oberheide",
+     "street": "Lange Str., 22",
+     "postcode": "31552",
+     "city": "Rodenberg",
+     "lat": 52.31158,
+     "lon": 9.35427
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/rudolstadt-granowski",
+   "locations": [
+    {
+     "name": "Service-Point Granowski",
+     "street": "Schwarzburger Str., 75",
+     "postcode": "07407",
+     "city": "Rudolstadt",
+     "lat": 50.686854,
+     "lon": 11.315816
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/saarlouis-hoen",
+   "locations": [
+    {
+     "name": "Euronics HOEN",
+     "street": "St. Avolder Str., 38",
+     "postcode": "66740",
+     "city": "Saarlouis-Neuforweiler",
+     "lat": 49.28829,
+     "lon": 6.73215
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/sankt-augustin-wiehlpuetz",
+   "locations": [
+    {
+     "name": "EURONICS Wiehlpütz",
+     "street": "Bonner Straße, 80",
+     "postcode": "53757",
+     "city": "Sankt Augustin",
+     "lat": 50.783211,
+     "lon": 7.195163
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/schenefeld-boecken",
+   "locations": [
+    {
+     "name": "EURONICS Böcken",
+     "street": "Friedrich-Ebert-Allee, 35",
+     "postcode": "22869",
+     "city": "Schenefeld",
+     "lat": 53.608391,
+     "lon": 9.845384
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/schirgiswalde-holfeld",
+   "locations": [
+    {
+     "name": "EURONICS Holfeld",
+     "street": "Bautzener Str., 10",
+     "postcode": "02681",
+     "city": "Schirgiswalde-Kirschau",
+     "lat": 51.08106,
+     "lon": 14.42935
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/schmallenberg-pletzinger",
+   "locations": [
+    {
+     "name": "EURONICS Pletzinger",
+     "street": "Oststr., 41",
+     "postcode": "57392",
+     "city": "Schmallenberg",
+     "lat": 51.14889,
+     "lon": 8.28525
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/schmoelln-suessengut",
+   "locations": [
+    {
+     "name": "euronics Süßengut",
+     "street": "Crimmitschauer Str., 25",
+     "postcode": "04626",
+     "city": "Schmölln",
+     "lat": 50.893325,
+     "lon": 12.350692
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/schnelldorf-haeusler",
+   "locations": [
+    {
+     "name": "EURONICS Häusler",
+     "street": "Schützenstraße, 12",
+     "postcode": "91625",
+     "city": "Schnelldorf",
+     "lat": 49.18623,
+     "lon": 10.225556
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/schopfheim-buehler",
+   "locations": [
+    {
+     "name": "EURONICS Bühler",
+     "street": "Feldbergstr., 2A",
+     "postcode": "79650",
+     "city": "Schopfheim",
+     "lat": 47.650604,
+     "lon": 7.824084
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/schwaebisch-hall-wolpert",
+   "locations": [
+    {
+     "name": "EURONICS Wolpert",
+     "street": "Auwiesenstr., 4",
+     "postcode": "74523",
+     "city": "Schwäbisch Hall",
+     "lat": 49.12129,
+     "lon": 9.73714
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/schwalmtal-wenzl",
+   "locations": [
+    {
+     "name": "Wenzl e.K.",
+     "street": "Hochstr., 6",
+     "postcode": "36318",
+     "city": "Schwalmtal",
+     "lat": 50.658012,
+     "lon": 9.266841
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/sindelfingen-elsaesser",
+   "locations": [
+    {
+     "name": "ELSÄSSER in Sindelfingen gegenüber Breuningerland",
+     "street": "Schwertstr., 37-39",
+     "postcode": "71065",
+     "city": "Sindelfingen",
+     "lat": 48.706007,
+     "lon": 9.031874
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/sinsheim-aberle",
+   "locations": [
+    {
+     "name": "EURONICS Aberle",
+     "street": "Hauptstr., 75-79",
+     "postcode": "74889",
+     "city": "Sinsheim",
+     "lat": 49.2535,
+     "lon": 8.87652
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/solingen-kortenhaus",
+   "locations": [
+    {
+     "name": "EURONICS Kortenhaus",
+     "street": "Schützenstraße, 19",
+     "postcode": "42659",
+     "city": "Solingen",
+     "lat": 51.165535,
+     "lon": 7.090277
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/stade-bencke",
+   "locations": [
+    {
+     "name": "EURONICS Bencke",
+     "street": "Hansestr., 32",
+     "postcode": "21682",
+     "city": "Stade",
+     "lat": 53.60949,
+     "lon": 9.47611
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/stadtroda-electronic-stadtroda",
+   "locations": [
+    {
+     "name": "electronic Stadtroda",
+     "street": "Geraer Straße, 74",
+     "postcode": "07646",
+     "city": "Stadtroda",
+     "lat": 50.860182,
+     "lon": 11.744862
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/stavenhagen-wolff",
+   "locations": [
+    {
+     "name": "Wolff",
+     "street": "An der Reutereiche, 1",
+     "postcode": "17153",
+     "city": "Stavenhagen",
+     "lat": 53.689161,
+     "lon": 12.917516
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/steinfurt-becker",
+   "locations": [
+    {
+     "name": "EURONICS Becker",
+     "street": "Altenberger Str., 69",
+     "postcode": "48565",
+     "city": "Steinfurt",
+     "lat": 52.11448,
+     "lon": 7.39897
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/storkow-tinius",
+   "locations": [
+    {
+     "name": "EURONICS Tinius",
+     "street": "Am Markt, 8",
+     "postcode": "15859",
+     "city": "Storkow",
+     "lat": 52.25478,
+     "lon": 13.93123
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/stuehlingen-scherzinger",
+   "locations": [
+    {
+     "name": "EURONICS Scherzinger",
+     "street": "Hauptstr., 7a",
+     "postcode": "79780",
+     "city": "Stühlingen",
+     "lat": 47.745723,
+     "lon": 8.448642
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/sulingen-ripke",
+   "locations": [
+    {
+     "name": "EURONICS Ripke",
+     "street": "Bassumer Straße, 9",
+     "postcode": "27232",
+     "city": "Sulingen",
+     "lat": 52.68232,
+     "lon": 8.79433
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/sulz-hettich",
+   "locations": [
+    {
+     "name": "EURONICS Hettich",
+     "street": "Holzhauser Str., 20",
+     "postcode": "72172",
+     "city": "Sulz",
+     "lat": 48.36258,
+     "lon": 8.63592
+    },
+    {
+     "name": "EURONICS Hettich",
+     "street": "Spitalgasse, 3",
+     "postcode": "72275",
+     "city": "Alpirsbach",
+     "lat": 48.346675,
+     "lon": 8.402931
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/templin-friedrich",
+   "locations": [
+    {
+     "name": "EURONICS Friedrich",
+     "street": "Bahnhofstr., 22b",
+     "postcode": "17268",
+     "city": "Templin",
+     "lat": 53.115425,
+     "lon": 13.49434
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/tostedt-abe-multimediatechnik",
+   "locations": [
+    {
+     "name": "EURONICS ABE Multimediatechnik",
+     "street": "Unter den Linden, 16",
+     "postcode": "21255",
+     "city": "Tostedt",
+     "lat": 53.28113,
+     "lon": 9.70821
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/tuebingen-betz",
+   "locations": [
+    {
+     "name": "EURONICS Elektro Betz",
+     "street": "Eberhardstr., 21",
+     "postcode": "72072",
+     "city": "Tübingen",
+     "lat": 48.513768,
+     "lon": 9.065218
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/ueberlingen-auer",
+   "locations": [
+    {
+     "name": "EURONICS Auer",
+     "street": "Lippertsreuter Str., 8",
+     "postcode": "88662",
+     "city": "Überlingen",
+     "lat": 47.771166,
+     "lon": 9.173797
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/uelsen-wigger",
+   "locations": [
+    {
+     "name": "EURONICS Wigger",
+     "street": "Van-der-Linde-Hof, 1",
+     "postcode": "49843",
+     "city": "Uelsen",
+     "lat": 52.49322,
+     "lon": 6.87461
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/vaihingen-enz-weis",
+   "locations": [
+    {
+     "name": "EURONICS Weis",
+     "street": "Stuttgarter Str., 53",
+     "postcode": "71665",
+     "city": "Vaihingen an der Enz",
+     "lat": 48.92998,
+     "lon": 8.96054
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/villingen-schwenningen-beck",
+   "locations": [
+    {
+     "name": "EURONICS Beck",
+     "street": "Oberdorfstr., 11",
+     "postcode": "78054",
+     "city": "Villingen-Schwenningen",
+     "lat": 48.06291,
+     "lon": 8.53229
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/vilsbiburg-hammer",
+   "locations": [
+    {
+     "name": "EURONICS HAMMER",
+     "street": "Baumgartenstraße, 2",
+     "postcode": "84137",
+     "city": "Vilsbiburg",
+     "lat": 48.452436,
+     "lon": 12.339008
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/voehringen-prem",
+   "locations": [
+    {
+     "name": "EURONICS Prem",
+     "street": "Memminger Str., 20",
+     "postcode": "89269",
+     "city": "Vöhringen",
+     "lat": 48.275741,
+     "lon": 10.079563
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/volkmarsen-gante",
+   "locations": [
+    {
+     "name": "EURONICS Gante",
+     "street": "Wittmarstr., 19",
+     "postcode": "34471",
+     "city": "Volkmarsen",
+     "lat": 51.41324,
+     "lon": 9.117185
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/waldheim-hellmuth",
+   "locations": [
+    {
+     "name": "Service-Point Radio Hellmuth",
+     "street": "Niederstadt, 18",
+     "postcode": "04736",
+     "city": "Waldheim",
+     "lat": 51.076315,
+     "lon": 13.02804
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/waltrop-eichten",
+   "locations": [
+    {
+     "name": "EURONICS Eichten",
+     "street": "Husemannstr., 2",
+     "postcode": "45731",
+     "city": "Waltrop",
+     "lat": 51.6184,
+     "lon": 7.39715
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/weisswasser-erf",
+   "locations": [
+    {
+     "name": "EURONICS ERF",
+     "street": "Lutherstr., 9",
+     "postcode": "02943",
+     "city": "Weißwasser",
+     "lat": 51.50144,
+     "lon": 14.64388
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/wertheim-diehm",
+   "locations": [
+    {
+     "name": "EURONICS Diehm",
+     "street": "Goethestr., 42",
+     "postcode": "63820",
+     "city": "Elsenfeld",
+     "lat": 49.851647,
+     "lon": 9.163958
+    },
+    {
+     "name": "EURONICS Diehm",
+     "street": "Bismarckstraße, 18",
+     "postcode": "97877",
+     "city": "Wertheim am Main",
+     "lat": 49.764666,
+     "lon": 9.509693
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/werther-stude",
+   "locations": [
+    {
+     "name": "Electronics Stude",
+     "street": "Wertherstraße, 45",
+     "postcode": "99735",
+     "city": "Werther",
+     "lat": 51.473187,
+     "lon": 10.742053
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/wesel-schlebusch",
+   "locations": [
+    {
+     "name": "EURONICS Schlebusch",
+     "street": "Ruhrweg, 14",
+     "postcode": "46487",
+     "city": "Wesel",
+     "lat": 51.678795,
+     "lon": 6.569497
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/wesseling-hoffmann",
+   "locations": [
+    {
+     "name": "EURONICS XXL Wesseling",
+     "street": "Brühler Str., 115",
+     "postcode": "50389",
+     "city": "Wesseling",
+     "lat": 50.830445,
+     "lon": 6.961969
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/wiesbaden-zerbe",
+   "locations": [
+    {
+     "name": "EURONICS Zerbe",
+     "street": "Niedernhausener Str., 57",
+     "postcode": "65207",
+     "city": "Wiesbaden",
+     "lat": 50.11779,
+     "lon": 8.27448
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/wilhelmsdorf-hagen",
+   "locations": [
+    {
+     "name": "EURONICS Hagen",
+     "street": "Zußdorfer Str., 7",
+     "postcode": "88271",
+     "city": "Wilhelmsdorf",
+     "lat": 47.866357,
+     "lon": 9.424793
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/wipperfuerth-schaetzmueller",
+   "locations": [
+    {
+     "name": "Euronics Schätzmüller",
+     "street": "Untere Straße, 40",
+     "postcode": "51688",
+     "city": "Wipperfürth",
+     "lat": 51.117619,
+     "lon": 7.398289
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/wittenberg-schnee",
+   "locations": [
+    {
+     "name": "EURONICS Schnee",
+     "street": "Rosa-Luxemburg-Str., 34-36",
+     "postcode": "06917",
+     "city": "Jessen (Elster)",
+     "lat": 51.79238,
+     "lon": 12.9624
+    },
+    {
+     "name": "EURONICS Schnee",
+     "street": "Dessauer Str., 50",
+     "postcode": "06886",
+     "city": "Lutherstadt Wittenberg",
+     "lat": 51.866936,
+     "lon": 12.6051
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/witzenhausen-velmeden",
+   "locations": [
+    {
+     "name": "Euronics Velmeden",
+     "street": "Steinstraße, 16",
+     "postcode": "37213",
+     "city": "Witzenhausen",
+     "lat": 51.343294,
+     "lon": 9.859493
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/wolfenbuettel-kretschmer",
+   "locations": [
+    {
+     "name": "EURONICS Kretschmer",
+     "street": "Hauptstr., 34/36",
+     "postcode": "38304",
+     "city": "Wolfenbüttel",
+     "lat": 52.171984,
+     "lon": 10.516076
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/wuerselen-nacken",
+   "locations": [
+    {
+     "name": "EURONICS Nacken",
+     "street": "Dorfstr., 3",
+     "postcode": "52146",
+     "city": "Würselen",
+     "lat": 50.84184,
+     "lon": 6.10988
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/wuppertal-frielinghaus",
+   "locations": [
+    {
+     "name": "EURONICS Frielinghaus",
+     "street": "Kruppstr., 79",
+     "postcode": "42113",
+     "city": "Wuppertal",
+     "lat": 51.26759,
+     "lon": 7.12644
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/xanten-hoffmann",
+   "locations": [
+    {
+     "name": "Hoffmann",
+     "street": "Bahnhofstr., 24",
+     "postcode": "46509",
+     "city": "Xanten",
+     "lat": 51.660236,
+     "lon": 6.449026
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/xxl-ahaus-dieker",
+   "locations": [
+    {
+     "name": "EURONICS XXL Dieker",
+     "street": "Adenauerring, 4",
+     "postcode": "48683",
+     "city": "Ahaus",
+     "lat": 52.07426,
+     "lon": 6.9961
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/xxl-asbach",
+   "locations": [
+    {
+     "name": "EURONICS XXL Unkel",
+     "street": "Anton-Limbach-Str., 3",
+     "postcode": "53572",
+     "city": "Unkel",
+     "lat": 50.593091,
+     "lon": 7.219646
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/xxl-attendorn-corte",
+   "locations": [
+    {
+     "name": "EURONICS XXL Corte",
+     "street": "Finnentroper Str., 14",
+     "postcode": "57439",
+     "city": "Attendorn",
+     "lat": 51.125938,
+     "lon": 7.910178
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/xxl-bayreuth-baumann",
+   "locations": [
+    {
+     "name": "EURONICS Baumann",
+     "street": "Hauptstr., 75",
+     "postcode": "91257",
+     "city": "Pegnitz",
+     "lat": 49.75664,
+     "lon": 11.53778
+    },
+    {
+     "name": "EURONICS XXL Baumann",
+     "street": "Ludwig-Thoma-Str., 20",
+     "postcode": "95447",
+     "city": "Bayreuth",
+     "lat": 49.93359,
+     "lon": 11.56806
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/xxl-bensheim",
+   "locations": [
+    {
+     "name": "EURONICS XXL AV Markt",
+     "street": "Fehlheimer Str., 100",
+     "postcode": "64625",
+     "city": "Bensheim",
+     "lat": 49.68888,
+     "lon": 8.61653
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/xxl-bernburg",
+   "locations": [
+    {
+     "name": "EURONICS XXL",
+     "street": "Herner Str., 7",
+     "postcode": "06295",
+     "city": "Lutherstadt Eisleben",
+     "lat": 51.512568,
+     "lon": 11.573931
+    },
+    {
+     "name": "EURONICS XXL",
+     "street": "Raiffeisenstr., 1",
+     "postcode": "04509",
+     "city": "Delitzsch",
+     "lat": 51.511725,
+     "lon": 12.335693
+    },
+    {
+     "name": "EURONICS XXL Bernburg",
+     "street": "Kalistr., 11",
+     "postcode": "06406",
+     "city": "Bernburg",
+     "lat": 51.77731,
+     "lon": 11.73715
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/xxl-beverungen-medien-markt",
+   "locations": [
+    {
+     "name": "EURONICS XXL Medien Markt",
+     "street": "Zum Osterfeld, 3",
+     "postcode": "37688",
+     "city": "Beverungen",
+     "lat": 51.67517,
+     "lon": 9.37701
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/xxl-boeseleger",
+   "locations": [
+    {
+     "name": "EURONICS XXL Böseleger",
+     "street": "Wiesenstr., 6",
+     "postcode": "28857",
+     "city": "Syke",
+     "lat": 52.9101,
+     "lon": 8.83306
+    },
+    {
+     "name": "EURONICS XXL Böseleger",
+     "street": "Langebrügger Str., 12",
+     "postcode": "26655",
+     "city": "Westerstede",
+     "lat": 53.255073,
+     "lon": 7.926366
+    },
+    {
+     "name": "EURONICS XXL Böseleger",
+     "street": "Westring, 8",
+     "postcode": "27793",
+     "city": "Wildeshausen",
+     "lat": 52.89525,
+     "lon": 8.41458
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/xxl-brackenheim-federmann",
+   "locations": [
+    {
+     "name": "EURONICS Brackenheim",
+     "street": "Georg-Kohl-Straße, 47",
+     "postcode": "74336",
+     "city": "Brackenheim",
+     "lat": 49.08221,
+     "lon": 9.06636
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/xxl-delbrueck",
+   "locations": [
+    {
+     "name": "EURONICS XXL Delbrück",
+     "street": "Boker Str., 25",
+     "postcode": "33129",
+     "city": "Delbrück",
+     "lat": 51.760122,
+     "lon": 8.563716
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/xxl-doebeln",
+   "locations": [
+    {
+     "name": "EURONICS Morgenstern",
+     "street": "Freiberger Str., 61",
+     "postcode": "09669",
+     "city": "Frankenberg",
+     "lat": 50.91138,
+     "lon": 13.0325
+    },
+    {
+     "name": "EURONICS XXL",
+     "street": "Gerichtswiesen, 39",
+     "postcode": "04668",
+     "city": "Grimma",
+     "lat": 51.233296,
+     "lon": 12.705403
+    },
+    {
+     "name": "EURONICS XXL",
+     "street": "Sepp-Verscht-Str., 1",
+     "postcode": "04463",
+     "city": "Großpösna",
+     "lat": 51.267073,
+     "lon": 12.496852
+    },
+    {
+     "name": "EURONICS XXL SACHSEN",
+     "street": "Richard-Köberlin-Str., 5",
+     "postcode": "04720",
+     "city": "Döbeln",
+     "lat": 51.11788,
+     "lon": 13.14776
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/xxl-einbeck",
+   "locations": [
+    {
+     "name": "EURONICS XXL Einbeck",
+     "street": "Altendorfer Tor, 20",
+     "postcode": "37574",
+     "city": "Einbeck",
+     "lat": 51.81435,
+     "lon": 9.87567
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/xxl-eisenhuettenstadt",
+   "locations": [
+    {
+     "name": "EURONICS XXL Eisenhüttenstadt",
+     "street": "Nordpassage, 1",
+     "postcode": "15890",
+     "city": "Eisenhüttenstadt",
+     "lat": 52.152689,
+     "lon": 14.63627
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/xxl-freyung-lindbuechl",
+   "locations": [
+    {
+     "name": "EURONICS XXL Lindbüchl Freyung",
+     "street": "Am Bahnhof, 21",
+     "postcode": "94078",
+     "city": "Freyung",
+     "lat": 48.80045,
+     "lon": 13.55032
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/xxl-fulda-efm",
+   "locations": [
+    {
+     "name": "EURONICS XXL EFM Fulda",
+     "street": "Kohlhäuser Str., 73",
+     "postcode": "36043",
+     "city": "Fulda",
+     "lat": 50.529534,
+     "lon": 9.685066
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/xxl-geislingen-albmarkt",
+   "locations": [
+    {
+     "name": "EURONICS XXL AlbMarkt",
+     "street": "Geislinger Str., 39",
+     "postcode": "89150",
+     "city": "Laichingen",
+     "lat": 48.488516,
+     "lon": 9.682914
+    },
+    {
+     "name": "EURONICS XXL AlbMarkt",
+     "street": "Eybstr., 98-102",
+     "postcode": "73312",
+     "city": "Geislingen",
+     "lat": 48.625086,
+     "lon": 9.835519
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/xxl-gera-maxi-media",
+   "locations": [
+    {
+     "name": "EURONICS XXL Gera",
+     "street": "Braustr., 8",
+     "postcode": "07551",
+     "city": "Gera",
+     "lat": 50.861211,
+     "lon": 12.085985
+    },
+    {
+     "name": "EURONICS XXL Gera Arcaden",
+     "street": "Heinrichstr., 30",
+     "postcode": "07545",
+     "city": "Gera-Arcaden",
+     "lat": 50.876301,
+     "lon": 12.079231
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/xxl-geretsried-isartaler-elektromarkt",
+   "locations": [
+    {
+     "name": "EURONICS XXL Isartaler Elektromarkt",
+     "street": "Bayerwaldstr., 3-5",
+     "postcode": "82538",
+     "city": "Geretsried",
+     "lat": 47.88317,
+     "lon": 11.4621
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/xxl-glauchau-maxi-media",
+   "locations": [
+    {
+     "name": "EURONICS XXL Glauchau",
+     "street": "Waldenburger Str., 97",
+     "postcode": "08371",
+     "city": "Glauchau",
+     "lat": 50.838888,
+     "lon": 12.539804
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/xxl-haag-durmeier",
+   "locations": [
+    {
+     "name": "euronics XXL Durmeier",
+     "street": "Gerberstr., 2",
+     "postcode": "83527",
+     "city": "Haag",
+     "lat": 48.1645,
+     "lon": 12.16743
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/xxl-kaufbeuren-elektropark-allgaeu",
+   "locations": [
+    {
+     "name": "EURONICS XXL ElektroPark Allgäu",
+     "street": "Ganghoferstr., 28",
+     "postcode": "87600",
+     "city": "Kaufbeuren",
+     "lat": 47.87545,
+     "lon": 10.625714
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/xxl-lauterbach",
+   "locations": [
+    {
+     "name": "EURONICS XXL Alsfeld",
+     "street": "Löbergasse, 5",
+     "postcode": "36304",
+     "city": "Alsfeld",
+     "lat": 50.750828,
+     "lon": 9.26916
+    },
+    {
+     "name": "EURONICS XXL Lauterbach Alsfeld",
+     "street": "Umgehungsstr., 45",
+     "postcode": "36341",
+     "city": "Lauterbach",
+     "lat": 50.64177,
+     "lon": 9.39267
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/xxl-lohne-stratmann",
+   "locations": [
+    {
+     "name": "EURONICS Center  Stratmann",
+     "street": "Wilhelmstr., 70",
+     "postcode": "37308",
+     "city": "Heilbad Heiligenstadt",
+     "lat": 51.377316,
+     "lon": 10.140096
+    },
+    {
+     "name": "EURONICS XXL Stratmann",
+     "street": "Flöthestraße, 1",
+     "postcode": "49356",
+     "city": "Diepholz",
+     "lat": 52.586249,
+     "lon": 8.341533
+    },
+    {
+     "name": "EURONICS XXL Stratmann",
+     "street": "Lindenstr., 121",
+     "postcode": "49393",
+     "city": "Lohne",
+     "lat": 52.67533,
+     "lon": 8.25465
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/xxl-luedinghausen",
+   "locations": [
+    {
+     "name": "EURONICS XXL Lüdinghausen",
+     "street": "Ascheberger Straße, 30",
+     "postcode": "59348",
+     "city": "Lüdinghausen",
+     "lat": 51.773225,
+     "lon": 7.46521
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/xxl-mechernich-kommern-urfey",
+   "locations": [
+    {
+     "name": "EURONICS XXL Urfey",
+     "street": "Gewerbegebiet Monzenbend, 6",
+     "postcode": "53894",
+     "city": "Mechernich-Kommern",
+     "lat": 50.619172,
+     "lon": 6.650769
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/xxl-meitingen-frey-und-diessl",
+   "locations": [
+    {
+     "name": "EURONICS XXL Frey & Diessl",
+     "street": "Via Claudia, 2",
+     "postcode": "86405",
+     "city": "Meitingen",
+     "lat": 48.55597,
+     "lon": 10.85135
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/xxl-meppen-moesker",
+   "locations": [
+    {
+     "name": "EURONICS XXL Mösker",
+     "street": "Werner-von-Siemens-Str., 5",
+     "postcode": "49584",
+     "city": "Fürstenau",
+     "lat": 52.514694,
+     "lon": 7.686377
+    },
+    {
+     "name": "EURONICS XXL Mösker",
+     "street": "Auf der Herrschwiese, 5-9",
+     "postcode": "49716",
+     "city": "Meppen",
+     "lat": 52.681721,
+     "lon": 7.290053
+    },
+    {
+     "name": "EURONICS XXL Mösker Bramsche",
+     "street": "Maschstr., 4",
+     "postcode": "49565",
+     "city": "Bramsche",
+     "lat": 52.410374,
+     "lon": 7.982771
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/xxl-merzig-funk",
+   "locations": [
+    {
+     "name": "EURONICS XXL Funk",
+     "street": "Wilde Acht, 4",
+     "postcode": "54329",
+     "city": "Konz",
+     "lat": 49.691401,
+     "lon": 6.563067
+    },
+    {
+     "name": "EURONICS XXL Funk",
+     "street": "Bezirkstr., 112",
+     "postcode": "66663",
+     "city": "Merzig",
+     "lat": 49.476053,
+     "lon": 6.605421
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/xxl-moelln-otto",
+   "locations": [
+    {
+     "name": "EURONICS XXL Mölln",
+     "street": "Sitzkrüger Moor, 2",
+     "postcode": "23879",
+     "city": "Mölln",
+     "lat": 53.64061,
+     "lon": 10.69591
+    },
+    {
+     "name": "EURONICS XXL Otto",
+     "street": "Schweriner Str., 15",
+     "postcode": "19230",
+     "city": "Hagenow",
+     "lat": 53.43449,
+     "lon": 11.19556
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/xxl-muehlhausen-thuer-moschcau",
+   "locations": [
+    {
+     "name": "EURONICS XXL Moschcau",
+     "street": "Ammersche Landstraße, 27-30",
+     "postcode": "99974",
+     "city": "Mühlhausen/Thür.",
+     "lat": 51.22332,
+     "lon": 10.45471
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/xxl-naumburg",
+   "locations": [
+    {
+     "name": "EURONICS XXL Naumburg",
+     "street": "Wilhelm-Franke-Str., 1",
+     "postcode": "06618",
+     "city": "Naumburg",
+     "lat": 51.14552,
+     "lon": 11.83216
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/xxl-neu-ulm",
+   "locations": [
+    {
+     "name": "EURONICS XXL Neu-Ulm",
+     "street": "Otto-Hahn Str., 4",
+     "postcode": "89231",
+     "city": "Neu-Ulm",
+     "lat": 48.388141,
+     "lon": 10.035483
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/xxl-niebuell",
+   "locations": [
+    {
+     "name": "EURONICS XXL Husum",
+     "street": "Liebigstraße, 12-14",
+     "postcode": "25813",
+     "city": "Husum",
+     "lat": 54.49279,
+     "lon": 9.07053
+    },
+    {
+     "name": "EURONICS XXL Niebüll",
+     "street": "Ostring, 7",
+     "postcode": "25899",
+     "city": "Niebüll",
+     "lat": 54.78189,
+     "lon": 8.84743
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/xxl-oehringen",
+   "locations": [
+    {
+     "name": "EURONICS XXL Sinn",
+     "street": "Austr., 14",
+     "postcode": "74613",
+     "city": "Öhringen",
+     "lat": 49.203304,
+     "lon": 9.492187
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/xxl-radeberg-frequenz",
+   "locations": [
+    {
+     "name": "EURONICS XXL Frequenz",
+     "street": "An der Ziegelei, 6",
+     "postcode": "01454",
+     "city": "Radeberg",
+     "lat": 51.12864,
+     "lon": 13.91459
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/xxl-ratingen-johann-und-wittmer",
+   "locations": [
+    {
+     "name": "EURONICS XXL Johann+Wittmer",
+     "street": "Kaiserswerther Strasse, 95",
+     "postcode": "40880",
+     "city": "Ratingen",
+     "lat": 51.296876,
+     "lon": 6.829066
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/xxl-rauenberg-spiess-elektro-markt",
+   "locations": [
+    {
+     "name": "EURONICS XXL Spiess Elektro Markt",
+     "street": "Hohenaspen, 44-54",
+     "postcode": "69231",
+     "city": "Rauenberg",
+     "lat": 49.273516,
+     "lon": 8.695419
+    },
+    {
+     "name": "EURONICS XXL Spiess Elektro Markt",
+     "street": "Schillerstr., 66-68",
+     "postcode": "68789",
+     "city": "St. Leon-Rot",
+     "lat": 49.27021,
+     "lon": 8.63267
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/xxl-rendsburg",
+   "locations": [
+    {
+     "name": "Rendsburg",
+     "street": "Friedrichstädter Straße, 34",
+     "postcode": "24768",
+     "city": "Rendsburg",
+     "lat": 54.31701,
+     "lon": 9.62741
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/xxl-rhede-dieker",
+   "locations": [
+    {
+     "name": "EURONICS XXL Dieker",
+     "street": "Gronauer Str., 23",
+     "postcode": "46414",
+     "city": "Rhede",
+     "lat": 51.851051,
+     "lon": 6.6986
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/xxl-rheinbach-rotec",
+   "locations": [
+    {
+     "name": "EURONICS XXL rotec",
+     "street": "Bachstrasse, 7",
+     "postcode": "53359",
+     "city": "Rheinbach",
+     "lat": 50.625173,
+     "lon": 6.950611
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/xxl-schoenebeck-haberstroh-und-boy",
+   "locations": [
+    {
+     "name": "EURONICS XXL      Haberstroh & Boy",
+     "street": "Schillerstraße, 5 A",
+     "postcode": "39218",
+     "city": "Schönebeck",
+     "lat": 52.01707,
+     "lon": 11.73311
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/xxl-soltau",
+   "locations": [
+    {
+     "name": "Euronics XXL Soltau",
+     "street": "Am Hornberg, 2",
+     "postcode": "29614",
+     "city": "Soltau",
+     "lat": 52.97404,
+     "lon": 9.82011
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/xxl-tettnang",
+   "locations": [
+    {
+     "name": "EURONICS XXL Biberach",
+     "street": "Hubertus-Liebrecht-Straße, 42",
+     "postcode": "88400",
+     "city": "Biberach",
+     "lat": 48.11694,
+     "lon": 9.80343
+    },
+    {
+     "name": "EURONICS XXL Memmingen",
+     "street": "Fraunhoferstr., 8",
+     "postcode": "87700",
+     "city": "Memmingen",
+     "lat": 48.004148,
+     "lon": 10.167632
+    },
+    {
+     "name": "EURONICS XXL Ravensburg",
+     "street": "Ulmer Straße, 7",
+     "postcode": "88212",
+     "city": "Ravensburg",
+     "lat": 47.787013,
+     "lon": 9.610226
+    },
+    {
+     "name": "EURONICS XXL Tettnang",
+     "street": "Klausenburger Straße, 17",
+     "postcode": "88069",
+     "city": "Tettnang",
+     "lat": 47.66427,
+     "lon": 9.57137
+    },
+    {
+     "name": "EURONICS XXL Villingen-Schwenningen",
+     "street": "Eckweg, 3",
+     "postcode": "78048",
+     "city": "Villingen-Schwenningen",
+     "lat": 48.069694,
+     "lon": 8.463962
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/xxl-tittling-lindbuechl",
+   "locations": [
+    {
+     "name": "Euronics XXL Lindbüchl Tittling",
+     "street": "Muggenthaler Str., 14",
+     "postcode": "94104",
+     "city": "Tittling",
+     "lat": 48.72636,
+     "lon": 13.38396
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/xxl-tuttlingen-mega-company",
+   "locations": [
+    {
+     "name": "EURONICS XXL Klaiber",
+     "street": "Daimlerstr., 15-25",
+     "postcode": "78532",
+     "city": "Tuttlingen",
+     "lat": 47.992772,
+     "lon": 8.825112
+    },
+    {
+     "name": "EURONICS XXL Mega Company",
+     "street": "Tuttlinger Str., 63",
+     "postcode": "78628",
+     "city": "Rottweil",
+     "lat": 48.15123,
+     "lon": 8.64113
+    },
+    {
+     "name": "EURONICS XXL Mega Company",
+     "street": "Bahnhofstr., 34",
+     "postcode": "72336",
+     "city": "Balingen",
+     "lat": 48.27855,
+     "lon": 8.85116
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/xxl-vilshofen-menth",
+   "locations": [
+    {
+     "name": "EURONICS XXL Vilshofen",
+     "street": "Allinger Str., 1",
+     "postcode": "94474",
+     "city": "Vilshofen",
+     "lat": 48.61374,
+     "lon": 13.178723
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/xxl-warstein-eickhoff",
+   "locations": [
+    {
+     "name": "Euronics XXL Eickhoff",
+     "street": "Külbe, 16-22",
+     "postcode": "59581",
+     "city": "Warstein-Belecke",
+     "lat": 51.489407,
+     "lon": 8.334477
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/xxl-zeitz-maxi-media",
+   "locations": [
+    {
+     "name": "EURONICS XXL Zeitz",
+     "street": "Friedensstraße, 19",
+     "postcode": "06712",
+     "city": "Zeitz",
+     "lat": 51.043304,
+     "lon": 12.125776
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/xxl-zeven",
+   "locations": [
+    {
+     "name": "EURONICS XXL Zeven",
+     "street": "Zum Hochkamp, 4",
+     "postcode": "27404",
+     "city": "Zeven",
+     "lat": 53.27733,
+     "lon": 9.29318
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/xxl-zittau-gross",
+   "locations": [
+    {
+     "name": "EURONICS XXL Groß",
+     "street": "Äußere Weberstr., 89",
+     "postcode": "02763",
+     "city": "Zittau",
+     "lat": 50.89901,
+     "lon": 14.78113
+    }
+   ]
+  },
+  {
+   "url": "https://www.euronics.de/zweibruecken-schwarz",
+   "locations": [
+    {
+     "name": "EURONICS Schwarz",
+     "street": "Alte Ixheimer Str., 14",
+     "postcode": "66482",
+     "city": "Zweibrücken",
+     "lat": 49.246314,
+     "lon": 7.365802
+    }
+   ]
+  },
+  {
+   "url": "https://www.mediaathome.de/amberg-pieper",
+   "locations": [
+    {
+     "name": "media@home Pieper",
+     "street": "Bäumlstr., 15",
+     "postcode": "92224",
+     "city": "Amberg",
+     "lat": 49.44293,
+     "lon": 11.87448
+    }
+   ]
+  },
+  {
+   "url": "https://www.mediaathome.de/augsburg-baumann",
+   "locations": [
+    {
+     "name": "media@home Baumann",
+     "street": "Hagenmähderstraße, 3",
+     "postcode": "86391",
+     "city": "Stadtbergen",
+     "lat": 48.367767,
+     "lon": 10.846016
+    }
+   ]
+  },
+  {
+   "url": "https://www.mediaathome.de/augsburg-maier",
+   "locations": [
+    {
+     "name": "media@home Maier",
+     "street": "Südtiroler Str., 6 1/3",
+     "postcode": "86165",
+     "city": "Augsburg",
+     "lat": 48.38201,
+     "lon": 10.93979
+    }
+   ]
+  },
+  {
+   "url": "https://www.mediaathome.de/aurich-kramer",
+   "locations": [
+    {
+     "name": "Kramer",
+     "street": "Esenser Str., 54-56",
+     "postcode": "26603",
+     "city": "Aurich",
+     "lat": 53.477914,
+     "lon": 7.487138
+    }
+   ]
+  },
+  {
+   "url": "https://www.mediaathome.de/bad-kreuznach-fernsehzentrale",
+   "locations": [
+    {
+     "name": "media@home Fernsehzentrale Bad Kreuznach",
+     "street": "Grete-Schickedanz Straße, 12",
+     "postcode": "55545",
+     "city": "Bad Kreuznach",
+     "lat": 49.861702,
+     "lon": 7.904992
+    }
+   ]
+  },
+  {
+   "url": "https://www.mediaathome.de/bad-saulgau-buck",
+   "locations": [
+    {
+     "name": "media@home Buck",
+     "street": "Marktplatz, 4",
+     "postcode": "88348",
+     "city": "Bad Saulgau",
+     "lat": 48.01707,
+     "lon": 9.49949
+    }
+   ]
+  },
+  {
+   "url": "https://www.mediaathome.de/berlin-king-music",
+   "locations": [
+    {
+     "name": "media@home King Music",
+     "street": "Uhlandstraße, 20-25",
+     "postcode": "10623",
+     "city": "Berlin",
+     "lat": 52.50411,
+     "lon": 13.32519
+    }
+   ]
+  },
+  {
+   "url": "https://www.mediaathome.de/berlin-koepenick-wuntke",
+   "locations": [
+    {
+     "name": "media@home Wuntke",
+     "street": "Bahnhofstr., 33-38",
+     "postcode": "12555",
+     "city": "Berlin-Köpenick",
+     "lat": 52.45816,
+     "lon": 13.577502
+    }
+   ]
+  },
+  {
+   "url": "https://www.mediaathome.de/bietigheim-bissingen-bauer",
+   "locations": [
+    {
+     "name": "media@home Bauer",
+     "street": "Gustav-Rau-Str., 1",
+     "postcode": "74321",
+     "city": "Bietigheim-Bissingen",
+     "lat": 48.94872,
+     "lon": 9.14702
+    }
+   ]
+  },
+  {
+   "url": "https://www.mediaathome.de/bochum-masters-knoop",
+   "locations": [
+    {
+     "name": "media@home Masters Knoop",
+     "street": "Brückstr., 7",
+     "postcode": "44787",
+     "city": "Bochum",
+     "lat": 51.48289,
+     "lon": 7.21846
+    }
+   ]
+  },
+  {
+   "url": "https://www.mediaathome.de/braunschweig-ferner",
+   "locations": [
+    {
+     "name": "media@home ferner",
+     "street": "Neue Straße, 22-23",
+     "postcode": "38100",
+     "city": "Braunschweig",
+     "lat": 52.264161,
+     "lon": 10.519663
+    }
+   ]
+  },
+  {
+   "url": "https://www.mediaathome.de/bremen-horn",
+   "locations": [
+    {
+     "name": "media@home Horn",
+     "street": "Langenstr., 24",
+     "postcode": "28195",
+     "city": "Bremen",
+     "lat": 53.077218,
+     "lon": 8.802559
+    }
+   ]
+  },
+  {
+   "url": "https://www.mediaathome.de/buchholz-bellut",
+   "locations": [
+    {
+     "name": "media@home Bellut",
+     "street": "Hamburger Straße, 5",
+     "postcode": "21244",
+     "city": "Buchholz",
+     "lat": 53.330035,
+     "lon": 9.881668
+    }
+   ]
+  },
+  {
+   "url": "https://www.mediaathome.de/cottbus-pohl",
+   "locations": [
+    {
+     "name": "media@home Pohl",
+     "street": "Hüfnerstr., 13",
+     "postcode": "03042",
+     "city": "Cottbus",
+     "lat": 51.76321,
+     "lon": 14.35281
+    }
+   ]
+  },
+  {
+   "url": "https://www.mediaathome.de/darmstadt-hifi-profis",
+   "locations": [
+    {
+     "name": "HiFi Profis Darmstadt",
+     "street": "Grafenstraße, 29",
+     "postcode": "64283",
+     "city": "Darmstadt",
+     "lat": 49.871651,
+     "lon": 8.649171
+    }
+   ]
+  },
+  {
+   "url": "https://www.mediaathome.de/delbrueck-php",
+   "locations": [
+    {
+     "name": "media@home Delbrück",
+     "street": "Wiesenweg, 4a",
+     "postcode": "33129",
+     "city": "Delbrück",
+     "lat": 51.75507,
+     "lon": 8.55336
+    }
+   ]
+  },
+  {
+   "url": "https://www.mediaathome.de/dinslaken-bison",
+   "locations": [
+    {
+     "name": "media@home BISON",
+     "street": "Voerder Str., 67-69",
+     "postcode": "46535",
+     "city": "Dinslaken",
+     "lat": 51.56434,
+     "lon": 6.726922
+    }
+   ]
+  },
+  {
+   "url": "https://www.mediaathome.de/ditzingen-stuetz",
+   "locations": [
+    {
+     "name": "media@home Stütz",
+     "street": "Hirschlander Str., 2",
+     "postcode": "71254",
+     "city": "Ditzingen",
+     "lat": 48.82699,
+     "lon": 9.06358
+    }
+   ]
+  },
+  {
+   "url": "https://www.mediaathome.de/duesseldorf-jokesch",
+   "locations": [
+    {
+     "name": "media@home Jokesch",
+     "street": "Hansaallee, 14-16",
+     "postcode": "40547",
+     "city": "Düsseldorf",
+     "lat": 51.232758,
+     "lon": 6.745793
+    }
+   ]
+  },
+  {
+   "url": "https://www.mediaathome.de/duesseldorf-nemetz",
+   "locations": [
+    {
+     "name": "media@home Nemetz",
+     "street": "Oststr., 112",
+     "postcode": "40210",
+     "city": "Düsseldorf",
+     "lat": 51.221704,
+     "lon": 6.785972
+    }
+   ]
+  },
+  {
+   "url": "https://www.mediaathome.de/eppingen-tuex",
+   "locations": [
+    {
+     "name": "media@home Tüx",
+     "street": "Brettener Str., 10",
+     "postcode": "75031",
+     "city": "Eppingen",
+     "lat": 49.13649,
+     "lon": 8.90841
+    },
+    {
+     "name": "media@home Tüx",
+     "street": "Diedelsheimer Höhe, 2",
+     "postcode": "75015",
+     "city": "Bretten",
+     "lat": 49.039106,
+     "lon": 8.688198
+    }
+   ]
+  },
+  {
+   "url": "https://www.mediaathome.de/erding-frei",
+   "locations": [
+    {
+     "name": "media@home Frei",
+     "street": "Münchenerstr., 13",
+     "postcode": "85435",
+     "city": "Erding",
+     "lat": 48.305077,
+     "lon": 11.904581
+    }
+   ]
+  },
+  {
+   "url": "https://www.mediaathome.de/erlangen-adloff",
+   "locations": [
+    {
+     "name": "media@home Adloff",
+     "street": "Obere-Karl-Str., 16",
+     "postcode": "91054",
+     "city": "Erlangen",
+     "lat": 49.596753,
+     "lon": 11.009286
+    }
+   ]
+  },
+  {
+   "url": "https://www.mediaathome.de/freiburg-hifi-video-gogler",
+   "locations": [
+    {
+     "name": "media@home Gogler",
+     "street": "Niemensstraße, 9 (1.OG)",
+     "postcode": "79098",
+     "city": "Freiburg i. Br.",
+     "lat": 47.994673,
+     "lon": 7.848156
+    }
+   ]
+  },
+  {
+   "url": "https://www.mediaathome.de/halle-jp-electronic",
+   "locations": [
+    {
+     "name": "JP-electronic",
+     "street": "August-Bebel-Str., 65",
+     "postcode": "06108",
+     "city": "Halle",
+     "lat": 51.48712,
+     "lon": 11.97148
+    }
+   ]
+  },
+  {
+   "url": "https://www.mediaathome.de/hamburg-athmer",
+   "locations": [
+    {
+     "name": "media@home Athmer",
+     "street": "Blankeneser Bahnhofstr., 48",
+     "postcode": "22587",
+     "city": "Hamburg",
+     "lat": 53.56191,
+     "lon": 9.81168
+    }
+   ]
+  },
+  {
+   "url": "https://www.mediaathome.de/hamburg-badje-ott",
+   "locations": [
+    {
+     "name": "media@home Badje-Ott",
+     "street": "Weiße Rose, 17",
+     "postcode": "22359",
+     "city": "Hamburg",
+     "lat": 53.648494,
+     "lon": 10.164214
+    }
+   ]
+  },
+  {
+   "url": "https://www.mediaathome.de/hamburg-sterling",
+   "locations": [
+    {
+     "name": "media@home Sterling",
+     "street": "Hoheluftchaussee, 40a",
+     "postcode": "20253",
+     "city": "Hamburg",
+     "lat": 53.580849,
+     "lon": 9.974669
+    }
+   ]
+  },
+  {
+   "url": "https://www.mediaathome.de/harrislee-wendorff",
+   "locations": [
+    {
+     "name": "media@home Wendorff",
+     "street": "Am Markt, 8-10",
+     "postcode": "24955",
+     "city": "Harrislee",
+     "lat": 54.79996,
+     "lon": 9.39469
+    }
+   ]
+  },
+  {
+   "url": "https://www.mediaathome.de/heilbronn-eberwein",
+   "locations": [
+    {
+     "name": "media@home Eberwein",
+     "street": "Lämlinstraße, 12",
+     "postcode": "74080",
+     "city": "Heilbronn",
+     "lat": 49.141647,
+     "lon": 9.162413
+    }
+   ]
+  },
+  {
+   "url": "https://www.mediaathome.de/hoesbach-beisler",
+   "locations": [
+    {
+     "name": "media@home Beisler",
+     "street": "Würzburger Str., 80",
+     "postcode": "63808",
+     "city": "Haibach",
+     "lat": 49.9644,
+     "lon": 9.19777
+    },
+    {
+     "name": "media@home Beisler",
+     "street": "Aschaffenburger Str., 16 A",
+     "postcode": "63773",
+     "city": "Goldbach",
+     "lat": 49.994663,
+     "lon": 9.176384
+    },
+    {
+     "name": "media@home Beisler",
+     "street": "Hauptstr., 68",
+     "postcode": "63768",
+     "city": "Hösbach",
+     "lat": 50.0025,
+     "lon": 9.20002
+    }
+   ]
+  },
+  {
+   "url": "https://www.mediaathome.de/karlsbad-all-electro",
+   "locations": [
+    {
+     "name": "media@home All-Electro",
+     "street": "Draisstraße, 7",
+     "postcode": "76307",
+     "city": "Karlsbad",
+     "lat": 48.92134,
+     "lon": 8.50064
+    }
+   ]
+  },
+  {
+   "url": "https://www.mediaathome.de/kempten-kraus",
+   "locations": [
+    {
+     "name": "media@home Kraus",
+     "street": "Sandstraße, 8-10",
+     "postcode": "87439",
+     "city": "Kempten (Eingang Salzstraße)",
+     "lat": 47.724366,
+     "lon": 10.31005
+    }
+   ]
+  },
+  {
+   "url": "https://www.mediaathome.de/koblenz-schmitz",
+   "locations": [
+    {
+     "name": "media@home Schmitz",
+     "street": "Emil-Schüller-Str., 39",
+     "postcode": "56068",
+     "city": "Koblenz",
+     "lat": 50.351804,
+     "lon": 7.590994
+    }
+   ]
+  },
+  {
+   "url": "https://www.mediaathome.de/koeln-reymer",
+   "locations": [
+    {
+     "name": "media@home Reymer Köln",
+     "street": "Dürener Str., 237",
+     "postcode": "50931",
+     "city": "Köln",
+     "lat": 50.92893,
+     "lon": 6.91112
+    }
+   ]
+  },
+  {
+   "url": "https://www.mediaathome.de/koenigstein-mutschall",
+   "locations": [
+    {
+     "name": "media@home Mutschall",
+     "street": "Wiesbadener Str., 2",
+     "postcode": "61462",
+     "city": "Königstein",
+     "lat": 50.182031,
+     "lon": 8.467888
+    }
+   ]
+  },
+  {
+   "url": "https://www.mediaathome.de/konstanz-krieg",
+   "locations": [
+    {
+     "name": "media@home Krieg",
+     "street": "Mainaustr., 164",
+     "postcode": "78464",
+     "city": "Konstanz",
+     "lat": 47.68323,
+     "lon": 9.203161
+    }
+   ]
+  },
+  {
+   "url": "https://www.mediaathome.de/kronshagen-begehr",
+   "locations": [
+    {
+     "name": "media@home Begehr",
+     "street": "Kieler Straße, 62 - 64",
+     "postcode": "24119",
+     "city": "Kiel-Kronshagen",
+     "lat": 54.331367,
+     "lon": 10.087058
+    }
+   ]
+  },
+  {
+   "url": "https://www.mediaathome.de/langenhagen-richter",
+   "locations": [
+    {
+     "name": "media@home Richter",
+     "street": "Hauptstr., 16",
+     "postcode": "30855",
+     "city": "Langenhagen - Godshorn",
+     "lat": 52.437015,
+     "lon": 9.706331
+    }
+   ]
+  },
+  {
+   "url": "https://www.mediaathome.de/leipzig-schoene",
+   "locations": [
+    {
+     "name": "media@home Leipzig",
+     "street": "Katharinenstrasse, 17",
+     "postcode": "04109",
+     "city": "Leipzig",
+     "lat": 51.34252,
+     "lon": 12.372062
+    }
+   ]
+  },
+  {
+   "url": "https://www.mediaathome.de/lohmar-tix",
+   "locations": [
+    {
+     "name": "media@home tix",
+     "street": "Wahlscheiderstr., 60",
+     "postcode": "53797",
+     "city": "Lohmar",
+     "lat": 50.886514,
+     "lon": 7.250127
+    }
+   ]
+  },
+  {
+   "url": "https://www.mediaathome.de/ludwigsburg-siegmund",
+   "locations": [
+    {
+     "name": "media@home Siegmund",
+     "street": "Friesenstr., 23",
+     "postcode": "71640",
+     "city": "Ludwigsburg",
+     "lat": 48.892821,
+     "lon": 9.224658
+    }
+   ]
+  },
+  {
+   "url": "https://www.mediaathome.de/luebeck-jessenlenz",
+   "locations": [
+    {
+     "name": "media@home JessenLenz",
+     "street": "Wahmstr., 36",
+     "postcode": "23552",
+     "city": "Lübeck",
+     "lat": 53.865144,
+     "lon": 10.68791
+    }
+   ]
+  },
+  {
+   "url": "https://www.mediaathome.de/luechow-laser",
+   "locations": [
+    {
+     "name": "Laser",
+     "street": "Bergstr, 31",
+     "postcode": "29439",
+     "city": "Lüchow",
+     "lat": 52.968293,
+     "lon": 11.16117
+    }
+   ]
+  },
+  {
+   "url": "https://www.mediaathome.de/offenbach-hifi-im-hinterhof",
+   "locations": [
+    {
+     "name": "media@home Hifi im Hinterhof",
+     "street": "Geleitsstraße, 50",
+     "postcode": "63067",
+     "city": "Offenbach",
+     "lat": 50.102423,
+     "lon": 8.75894
+    }
+   ]
+  },
+  {
+   "url": "https://www.mediaathome.de/pinneberg-kiazim",
+   "locations": [
+    {
+     "name": "media@home KIAZIM",
+     "street": "Damm, 48",
+     "postcode": "25421",
+     "city": "Pinneberg",
+     "lat": 53.658966,
+     "lon": 9.807109
+    }
+   ]
+  },
+  {
+   "url": "https://www.mediaathome.de/plauen-hifiboehm",
+   "locations": [
+    {
+     "name": "media@home hifiboehm",
+     "street": "Unterer Steinweg, 8",
+     "postcode": "08523",
+     "city": "Plauen",
+     "lat": 50.494092,
+     "lon": 12.137397
+    }
+   ]
+  },
+  {
+   "url": "https://www.mediaathome.de/recklinghausen-moldenhauer",
+   "locations": [
+    {
+     "name": "media@home Moldenhauer",
+     "street": "Bochumer Str., 85",
+     "postcode": "45663",
+     "city": "Recklinghausen",
+     "lat": 51.575664,
+     "lon": 7.21308
+    }
+   ]
+  },
+  {
+   "url": "https://www.mediaathome.de/reinheim-friedrich",
+   "locations": [
+    {
+     "name": "media@home Friedrich",
+     "street": "Zuckerstraße, 9",
+     "postcode": "64807",
+     "city": "Dieburg",
+     "lat": 49.833516,
+     "lon": 8.833139
+    }
+   ]
+  },
+  {
+   "url": "https://www.mediaathome.de/rellingen-fidelity-acker-buck",
+   "locations": [
+    {
+     "name": "media@home Fidelity",
+     "street": "Adlerstrasse, 79",
+     "postcode": "25462",
+     "city": "Rellingen",
+     "lat": 53.62699,
+     "lon": 9.88592
+    }
+   ]
+  },
+  {
+   "url": "https://www.mediaathome.de/reutlingen-hoss",
+   "locations": [
+    {
+     "name": "media@home Hoss",
+     "street": "Riedericher Str., 22",
+     "postcode": "72766",
+     "city": "Reutlingen",
+     "lat": 48.56108,
+     "lon": 9.23344
+    }
+   ]
+  },
+  {
+   "url": "https://www.mediaathome.de/rhauderfehn-natelberg",
+   "locations": [
+    {
+     "name": "media@home Natelberg",
+     "street": "Schwarzmoorstraße, 9",
+     "postcode": "26817",
+     "city": "Rhauderfehn",
+     "lat": 53.134413,
+     "lon": 7.53526
+    }
+   ]
+  },
+  {
+   "url": "https://www.mediaathome.de/solingen-juentgen",
+   "locations": [
+    {
+     "name": "media@home Jüntgen",
+     "street": "Grünewalder Str., 76-78",
+     "postcode": "42657",
+     "city": "Solingen",
+     "lat": 51.159651,
+     "lon": 7.075308
+    }
+   ]
+  },
+  {
+   "url": "https://www.mediaathome.de/tegernsee-leobner",
+   "locations": [
+    {
+     "name": "media@home Leobner",
+     "street": "Schwaighofstr., 23",
+     "postcode": "83684",
+     "city": "Tegernsee",
+     "lat": 47.70047,
+     "lon": 11.76676
+    }
+   ]
+  },
+  {
+   "url": "https://www.mediaathome.de/trier-blang",
+   "locations": [
+    {
+     "name": "media@home Blang",
+     "street": "Petrusstraße, 8",
+     "postcode": "54292",
+     "city": "Trier",
+     "lat": 49.760162,
+     "lon": 6.647129
+    }
+   ]
+  },
+  {
+   "url": "https://www.mediaathome.de/tuerkheim-neumaier",
+   "locations": [
+    {
+     "name": "media@home Elektro Neumaier",
+     "street": "Grabenstr., 4-8",
+     "postcode": "86842",
+     "city": "Türkheim",
+     "lat": 48.05975,
+     "lon": 10.64037
+    }
+   ]
+  },
+  {
+   "url": "https://www.mediaathome.de/ulm-conrad",
+   "locations": [
+    {
+     "name": "media@home Conrad",
+     "street": "Schlößlesgasse, 12",
+     "postcode": "89077",
+     "city": "Ulm",
+     "lat": 48.39641,
+     "lon": 9.955596
+    }
+   ]
+  },
+  {
+   "url": "https://www.mediaathome.de/ulm-grees",
+   "locations": [
+    {
+     "name": "media@home GREES",
+     "street": "Ehmannstr., 1",
+     "postcode": "89081",
+     "city": "Ulm",
+     "lat": 48.443562,
+     "lon": 9.98674
+    }
+   ]
+  },
+  {
+   "url": "https://www.mediaathome.de/verden-bungalski",
+   "locations": [
+    {
+     "name": "media@home Bungalski",
+     "street": "Grosse Str., 117",
+     "postcode": "27283",
+     "city": "Verden",
+     "lat": 52.91842,
+     "lon": 9.22923
+    }
+   ]
+  },
+  {
+   "url": "https://www.mediaathome.de/warendorf-hifitreff",
+   "locations": [
+    {
+     "name": "media@home Hifitreff",
+     "street": "Wilhelmstraße, 4",
+     "postcode": "48231",
+     "city": "Warendorf",
+     "lat": 51.95248,
+     "lon": 7.98453
+    }
+   ]
+  },
+  {
+   "url": "https://www.mediaathome.de/wiesbaden-AVMedia",
+   "locations": [
+    {
+     "name": "AV Media-Projekte GmbH",
+     "street": "Große Friedberger Str., 23-27",
+     "postcode": "60313",
+     "city": "Frankfurt",
+     "lat": 50.115972,
+     "lon": 8.686191
+    },
+    {
+     "name": "AV Media-Projekte GmbH",
+     "street": "Rheinstraße, 29",
+     "postcode": "65185",
+     "city": "Wiesbaden",
+     "lat": 50.07807,
+     "lon": 8.242753
+    }
+   ]
+  },
+  {
+   "url": "https://www.mediaathome.de/winnenden-heymann",
+   "locations": [
+    {
+     "name": "media@home HEYMANN",
+     "street": "Alfred-Kärcher-Straße, 11",
+     "postcode": "71364",
+     "city": "Winnenden",
+     "lat": 48.878354,
+     "lon": 9.39535
+    }
+   ]
+  },
+  {
+   "url": "https://www.mediaathome.de/zetel-stadtlander",
+   "locations": [
+    {
+     "name": "media@home Stadtlander",
+     "street": "Jakob-Borchers-Str., 3",
+     "postcode": "26340",
+     "city": "Zetel",
+     "lat": 53.41883,
+     "lon": 7.97427
+    }
+   ]
+  }
+ ]
+}
