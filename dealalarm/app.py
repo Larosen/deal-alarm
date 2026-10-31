@@ -7,7 +7,7 @@ import threading
 
 from flask import Flask, Response, jsonify, render_template, request
 
-from . import checker, notifier, storage
+from . import checker, notifier, ratelimit, scan, storage
 from .shops import expert
 
 log = logging.getLogger(__name__)
@@ -20,7 +20,10 @@ BOOL_FIELDS = {
     "enabled", "expert_enabled", "expert_all_branches", "expert_include_display",
     "expert_include_local", "euronics_enabled", "scheduler_enabled",
 }
-INT_FIELDS = {"interval_minutes", "jitter_minutes", "ntfy_priority"}
+INT_FIELDS = {
+    "interval_minutes", "jitter_minutes", "ntfy_priority", "expert_rate_per_min", "expert_workers",
+    "expert_stores_per_cycle", "euronics_rate_per_min", "price_max_age_hours",
+}
 
 
 def _clean(values):
@@ -69,7 +72,45 @@ def create_app(start_scheduler=True):
         data = storage.get_state()
         data["settings"]["ntfy_token"] = "••••" if data["settings"].get("ntfy_token") else ""
         data["scheduler"]["running"] = checker.is_running()
+        data["limiters"] = ratelimit.snapshots()
+        for watch in data["watches"]:
+            # Filialpreise gibt es gesammelt über /api/watches/<id>/stores
+            watch.pop("store_prices", None)
         return jsonify(data)
+
+    @app.get("/api/watches/<watch_id>/stores")
+    def store_prices(watch_id):
+        watch = storage.get_watch(watch_id)
+        if not watch:
+            return jsonify(error="Nicht gefunden"), 404
+        settings = storage.get_settings()
+        shop = request.args.get("shop", "expert")
+        store_state = (watch.get("store_prices") or {}).get(shop) or {}
+        product_url = store_state.get("_product_url", "")
+        rows, unavailable = [], 0
+        accepted = set()
+        if shop == "expert":
+            all_offers = scan.fresh_offers(store_state, float("inf"))
+            accepted = {o["store_id"] for o in expert.filter_offers(all_offers, watch, settings)}
+        max_age = float(settings.get("price_max_age_hours") or 24)
+        for store_id, entry in store_state.items():
+            if store_id.startswith("_"):
+                continue
+            offer = entry.get("offer")
+            if not offer:
+                unavailable += 1
+                continue
+            rows.append({
+                **offer,
+                "store_id": store_id,
+                "store_name": entry["name"],
+                "checked": entry["checked"],
+                "stale": scan.age_hours(entry["checked"]) > max_age,
+                "matches_filter": store_id in accepted,
+                "url": expert.store_url(product_url, store_id) if shop == "expert" and product_url else None,
+            })
+        rows.sort(key=lambda r: r["total_price"])
+        return jsonify(stores=rows, unavailable=unavailable, target_price=watch["target_price"])
 
     @app.put("/api/settings")
     def settings():

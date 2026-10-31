@@ -5,6 +5,7 @@ import json
 import re
 from urllib.parse import quote_plus, urljoin
 
+from .. import ratelimit
 from .common import http_session, parse_price
 
 BASE = "https://www.euronics.de"
@@ -15,18 +16,24 @@ _META_REV_RE = re.compile(r'<meta[^>]+content=["\']([^"\']*)["\'][^>]*(?:itempro
 _TITLE_RE = re.compile(r"<title[^>]*>(.*?)</title>", re.S | re.I)
 
 
-class EuronicsBlocked(RuntimeError):
-    pass
+# Euronics sitzt hinter einer AWS-WAF, die bei zu vielen Anfragen mit 403 antwortet
+THROTTLE_STATUS = {403, 429, 503}
 
 
-def _get(url):
+def _limiter(settings):
+    return ratelimit.get_limiter("euronics", settings.get("euronics_rate_per_min") or 6, min_per_minute=1)
+
+
+def _get(url, settings):
     session = http_session()
     session.headers["Accept"] = "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
-    response = session.get(url, timeout=30)
-    if response.status_code in (401, 403, 429):
-        raise EuronicsBlocked(
-            f"Euronics hat die Anfrage abgelehnt (HTTP {response.status_code}). "
-            "Euronics sperrt häufig Rechenzentrums-IPs – am besten zuhause laufen lassen."
+    try:
+        response = ratelimit.request(session, _limiter(settings), "GET", url,
+                                     throttle_status=THROTTLE_STATUS, attempts=2, timeout=30)
+    except ratelimit.RateLimited:
+        raise ratelimit.RateLimited(
+            "Euronics blockiert oder drosselt die Anfragen (HTTP 403/429). "
+            "Rechenzentrums-IPs werden oft komplett gesperrt – am besten zuhause laufen lassen."
         )
     response.raise_for_status()
     return response
@@ -114,7 +121,7 @@ def _first_product_link(page, base_url):
     return None
 
 
-def check(watch, settings):
+def check(watch, settings, store_state):
     query = (watch.get("euronics_query") or "").strip() or (watch.get("ean") or "").strip()
     if not query:
         raise ValueError("Keine Euronics-URL bzw. EAN hinterlegt")
@@ -124,12 +131,13 @@ def check(watch, settings):
     else:
         url = f"{BASE}/search?sSearch={quote_plus(query)}"
 
-    response = _get(url)
+    _limiter(settings).start_scan()
+    response = _get(url, settings)
     product = parse_product_page(response.text, response.url)
     if product is None and "euronics.de" not in query:
         link = _first_product_link(response.text, response.url)
         if link:
-            response = _get(link)
+            response = _get(link, settings)
             product = parse_product_page(response.text, response.url)
     if product is None:
         raise LookupError("Kein Preis auf der Euronics-Seite gefunden – bitte direkte Produkt-URL angeben")
@@ -141,5 +149,4 @@ def check(watch, settings):
         "price": product["price"] if product["available"] else None,
         "available": product["available"],
         "detail": "Euronics Onlineshop" if product["available"] else "Nicht verfügbar",
-        "offers": [],
-    }
+    }, store_state

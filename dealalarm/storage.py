@@ -19,6 +19,12 @@ DEFAULT_SETTINGS = {
     "jitter_minutes": 10,
     "plz": "",
     "scheduler_enabled": True,
+    # Abfragetempo pro Shop
+    "expert_rate_per_min": 300,
+    "expert_workers": 8,
+    "expert_stores_per_cycle": 0,      # 0 = alle Filialen in jedem Zyklus
+    "euronics_rate_per_min": 6,
+    "price_max_age_hours": 24,         # ältere Filialpreise zählen nicht mehr für den Dealalarm
 }
 
 DEFAULT_WATCH = {
@@ -125,7 +131,7 @@ def delete_watch(watch_id):
         return len(state["watches"]) < before
 
 
-def save_result(watch_id, shop, result, history_entry=None):
+def save_result(watch_id, shop, result, history_entry=None, store_state=None):
     """Speichert das Prüfergebnis eines Shops. Liefert das bisherige Ergebnis zurück."""
     with _lock:
         state = _load()
@@ -133,6 +139,8 @@ def save_result(watch_id, shop, result, history_entry=None):
             if watch["id"] == watch_id:
                 previous = watch.setdefault("results", {}).get(shop)
                 watch["results"][shop] = result
+                if store_state is not None:
+                    watch.setdefault("store_prices", {})[shop] = store_state
                 if history_entry:
                     watch.setdefault("history", []).append(history_entry)
                     watch["history"] = watch["history"][-HISTORY_LIMIT:]

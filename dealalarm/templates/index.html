@@ -100,12 +100,44 @@
       </div>
       <label class="narrow">Deine PLZ <span class="muted">(für lokale expert-Angebote)</span><input name="plz" inputmode="numeric" maxlength="5"></label>
     </fieldset>
+    <fieldset>
+      <legend>Abfragetempo &amp; Filialen</legend>
+      <p class="hint">Jede Filiale wird einzeln abgefragt. Bei Drosselung (HTTP 429/403) halbiert sich das Tempo automatisch
+        und steigt danach langsam wieder. Ist das Budget pro Zyklus kleiner als die Zahl der Filialen, wandert der Scan über
+        mehrere Zyklen durch alle Filialen – die bisher günstigsten werden dabei jedes Mal neu geprüft.</p>
+      <div class="row">
+        <label>expert: max. Anfragen/Minute<input name="expert_rate_per_min" inputmode="numeric"></label>
+        <label>expert: parallele Anfragen<input name="expert_workers" inputmode="numeric"></label>
+      </div>
+      <div class="row">
+        <label>expert: Filialen pro Zyklus <span class="muted">(0 = alle)</span><input name="expert_stores_per_cycle" inputmode="numeric"></label>
+        <label>Euronics: max. Anfragen/Minute<input name="euronics_rate_per_min" inputmode="numeric"></label>
+      </div>
+      <label class="narrow">Filialpreise gelten max. (Stunden)<input name="price_max_age_hours" inputmode="numeric"></label>
+      <div id="limiter-info" class="muted small"></div>
+    </fieldset>
     <p id="settings-error" class="error"></p>
     <div class="dialog-actions">
       <button type="button" data-close>Abbrechen</button>
       <button type="submit" class="primary">Speichern</button>
     </div>
   </form>
+</dialog>
+
+<!-- Filialpreise -->
+<dialog id="stores-dialog" class="wide">
+  <div class="dialog-body">
+    <h2 id="stores-title">Filialpreise</h2>
+    <p id="stores-summary" class="muted"></p>
+    <label class="inline small"><input type="checkbox" id="stores-only-match" checked> Nur Angebote, die zu den Filtern passen</label>
+    <div class="table-wrap">
+      <table class="stores">
+        <thead><tr><th>#</th><th>Filiale</th><th class="num">Preis</th><th class="num">Versand</th><th class="num">Gesamt</th><th>Bestand</th><th>geprüft</th></tr></thead>
+        <tbody id="stores-body"></tbody>
+      </table>
+    </div>
+    <div class="dialog-actions"><button type="button" data-close>Schließen</button></div>
+  </div>
 </dialog>
 
 <template id="watch-template">

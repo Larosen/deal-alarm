@@ -81,8 +81,9 @@ def check_watch(watch, settings):
         if not _shop_active(watch, shop):
             continue
         previous = (watch.get("results") or {}).get(shop)
+        store_state = (watch.get("store_prices") or {}).get(shop) or {}
         try:
-            result = check_fn(watch, settings)
+            result, store_state = check_fn(watch, settings, store_state)
         except Exception as exc:  # einzelne Shopfehler sollen den Lauf nicht abbrechen
             log.warning("%s / %s: %s", watch.get("name"), shop, exc)
             result = {"error": str(exc), "price": None, "available": False}
@@ -106,7 +107,7 @@ def check_watch(watch, settings):
         history = None
         if result.get("price") is not None:
             history = {"time": result["checked_at"], "shop": shop, "price": result["price"]}
-        storage.save_result(watch["id"], shop, result, history)
+        storage.save_result(watch["id"], shop, result, history, store_state)
         summary[shop] = result
     return summary
 

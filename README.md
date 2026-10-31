@@ -12,7 +12,8 @@ und durchsucht auf Wunsch alle expert-Filialen inkl. Direktabzug/Aktionspreis un
 
 - Watchlist mit Wunschpreis pro Gerät, pausierbar, „Jetzt prüfen“ pro Gerät oder für alle
 - **expert**: Produkt-URL, Webcode oder Suchbegriff (mit Suchauswahl in der Oberfläche)
-  - Onlineshop oder alle Filialen (versandfähige Angebote)
+  - **jede Filiale wird einzeln abgefragt** – jede Niederlassung hat ihre eigenen Preise
+  - Vergleichstabelle „Alle Filialpreise“ mit Preis, Versand, Gesamtpreis, Bestand und Prüfzeitpunkt
   - optional Ausstellungsstücke und nur lokal verfügbare Angebote im Umkreis deiner PLZ
 - **Euronics**: Produkt-URL oder Suche über die EAN (die EAN wird automatisch von expert übernommen)
 - Zeitplan mit einstellbarem Intervall (Standard 120 Min.) und Zufallsabweichung (Standard ± 10 Min.)
@@ -20,6 +21,23 @@ und durchsucht auf Wunsch alle expert-Filialen inkl. Direktabzug/Aktionspreis un
 - Kein Benachrichtigungs-Spam: Pro Gerät und Shop gibt es einen Alarm, wenn der Wunschpreis erreicht wird.
   Ein weiterer kommt erst, wenn der Preis nochmals fällt oder zwischenzeitlich wieder über dem Wunschpreis lag.
 - Optionaler Passwortschutz (HTTP Basic Auth) über `UI_PASSWORD`
+
+## Filial-Scanner und Rate-Limit
+
+Jede Filiale wird einzeln abgefragt. Damit auch strenge Rate-Limits nicht zum Problem werden:
+
+- **Adaptives Tempo pro Shop:** Anfragen werden gleichmäßig verteilt (einstellbar in Anfragen/Minute).
+  Bei Drosselung (HTTP 429/503, bei Euronics auch WAF-403) halbiert sich das Tempo, `Retry-After`
+  wird beachtet und es gibt eine wachsende Pause. Nach 25 erfolgreichen Anfragen steigt das Tempo wieder.
+- **Gedächtnis pro Filiale:** Der letzte Preis jeder Filiale wird gespeichert. Bricht ein Scan wegen
+  Drosselung ab, geht nichts verloren – der nächste Zyklus macht weiter.
+- **Rotierendes Budget:** Optional nur *N* Filialen pro Zyklus. Bis zur Hälfte des Budgets geht an die
+  bisher günstigsten Filialen (damit ein Deal auf aktuellen Daten beruht), der Rest rotiert durch
+  ungeprüfte und am längsten nicht geprüfte Filialen. So sind über mehrere Zyklen alle Filialen abgedeckt.
+- **Gültigkeit:** Filialpreise, die älter als die eingestellte Zeit sind (Standard 24 h), zählen nicht
+  mehr für den Dealalarm und werden in der Tabelle als „veraltet“ markiert.
+
+Bei expert dauert ein voller Scan aller ~350 Filialen mit Standardeinstellungen etwa eine Minute.
 
 ## Start mit Docker (empfohlen)
 
@@ -64,7 +82,10 @@ Der Dealalarm enthält Gerät, Preis, Wunschpreis und Filiale. Ein Tipp auf die 
   wird das am Gerät angezeigt, ohne dass die expert-Prüfung darunter leidet.
 - Der Euronics-Preis wird aus den strukturierten Produktdaten der Seite (schema.org/JSON-LD bzw.
   Meta-Tags) gelesen. Liefert die EAN-Suche kein eindeutiges Produkt, bitte die direkte Produkt-URL eintragen.
-- Eine Prüfung über alle expert-Filialen dauert ca. 30 Sekunden pro Gerät. Bitte das Intervall nicht zu
+- **Euronics-Marktpreise:** Derzeit wird bei Euronics nur der Onlinepreis abgefragt. Der Filial-Scanner
+  inkl. Rate-Limit ist vorbereitet; es fehlt noch, wie euronics.de den Preis eines bestimmten Markts
+  ausliefert – dafür wird ein Mitschnitt der Browser-Anfrage beim Wechsel des Markts benötigt.
+- Eine Prüfung über alle expert-Filialen dauert ca. eine Minute pro Gerät. Bitte das Intervall nicht zu
   klein wählen (Minimum 15 Minuten), damit die Shops nicht unnötig belastet werden.
 
 ## Entwicklung

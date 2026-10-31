@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from dealalarm import checker
+from dealalarm import checker, ratelimit, scan
 from dealalarm.shops import euronics, expert
 from dealalarm.shops.common import parse_price
 
@@ -35,10 +35,10 @@ def test_parse_offer_uses_checkout_price_and_shipping():
         },
         "promotionPrice": {"checkoutPrice": 229},
     }
-    offer = expert.parse_offer(data, "expert Test", "e_1", "https://x")
+    offer = expert.parse_offer(data)
     assert offer["price"] == 229
     assert offer["total_price"] == 233.99
-    assert expert.parse_offer({"price": {}}, "x", "e_1", "u") is None
+    assert expert.parse_offer({"price": {}}) is None
 
 
 def test_euronics_jsonld():
@@ -105,3 +105,93 @@ def test_api_roundtrip(tmp_path, monkeypatch):
     client.put("/api/settings", json={"ntfy_token": "••••"})
     assert storage.get_settings()["ntfy_token"] == "geheim"
     assert client.delete(f"/api/watches/{wid}").json["ok"] is True
+
+
+def _stores(n):
+    return [{"id": f"s{i}", "name": f"Filiale {i}"} for i in range(n)]
+
+
+def _offer(price):
+    return {"price": price, "shipping": 0, "total_price": price, "online_stock": 1, "store_stock": 0, "on_display": False}
+
+
+def test_plan_prioritises_known_offers_then_unchecked_then_oldest():
+    state = {
+        "s0": {"name": "", "checked": "2026-10-01T00:00:00+00:00", "offer": None},
+        "s1": {"name": "", "checked": "2026-10-30T00:00:00+00:00", "offer": _offer(300)},
+        "s2": {"name": "", "checked": "2026-10-30T00:00:00+00:00", "offer": _offer(250)},
+        "s3": {"name": "", "checked": "2026-10-20T00:00:00+00:00", "offer": None},
+    }
+    order = [s["id"] for s in scan.plan(_stores(6), state)]
+    assert order == ["s2", "s1", "s4", "s5", "s0", "s3"]
+    assert [s["id"] for s in scan.plan(_stores(6), state, budget=4)] == ["s2", "s1", "s4", "s5"]
+    assert [s["id"] for s in scan.plan(_stores(6), state, budget=3)] == ["s2", "s4", "s5"]
+
+
+def test_scan_rotates_through_all_stores_with_budget():
+    prices = {f"s{i}": 100 + i for i in range(10)}
+    state = {}
+    for _ in range(4):
+        state, stats = scan.run(_stores(10), state, lambda s: _offer(prices[s["id"]]), budget=4)
+    assert len(state) == 10 and stats["known"] == 10
+    assert scan.fresh_offers({**state, "_webcode": "123"}, 24)[0]["store_id"] == "s0"
+
+
+def test_scan_keeps_partial_results_when_rate_limited():
+    def fetch(store):
+        if store["id"] in ("s3", "s4"):
+            raise ratelimit.RateLimited("zu viele Anfragen")
+        return _offer(100)
+    state, stats = scan.run(_stores(5), {}, fetch)
+    assert stats["aborted"] and stats["checked"] == 3 and set(state) == {"s0", "s1", "s2"}
+
+
+def test_scan_drops_stores_that_no_longer_exist():
+    state = {"gone": {"name": "x", "checked": scan.now_iso(), "offer": _offer(1)}}
+    state, _ = scan.run(_stores(1), state, lambda s: None)
+    assert set(state) == {"s0"} and state["s0"]["offer"] is None
+
+
+def test_limiter_backs_off_and_recovers(monkeypatch):
+    monkeypatch.setattr(ratelimit.time, "sleep", lambda s: None)
+    limiter = ratelimit.AdaptiveLimiter("t", 60, min_per_minute=2, max_strikes=2)
+    limiter.throttled()
+    assert limiter.rate == 30
+    limiter.throttled(retry_after=5)
+    assert limiter.rate == 15
+    with pytest.raises(ratelimit.RateLimited):
+        limiter.wait()
+    limiter.start_scan()
+    limiter.wait()
+    for _ in range(25):
+        limiter.ok()
+    assert limiter.rate > 15
+
+
+class _Resp:
+    def __init__(self, status, headers=None):
+        self.status_code = status
+        self.headers = headers or {}
+
+
+def test_request_retries_after_throttle(monkeypatch):
+    monkeypatch.setattr(ratelimit.time, "sleep", lambda s: None)
+    answers = iter([_Resp(429, {"Retry-After": "1"}), _Resp(200)])
+
+    class Session:
+        def request(self, *a, **k):
+            return next(answers)
+    limiter = ratelimit.AdaptiveLimiter("t", 600)
+    assert ratelimit.request(Session(), limiter, "GET", "u").status_code == 200
+    assert limiter.throttled_count == 1
+
+
+def test_expert_filters():
+    offers = [
+        {**_offer(100), "on_display": True, "store_id": "a"},
+        {**_offer(120), "online_stock": 0, "store_stock": 1, "store_id": "b", "coordinates": (53.6, 9.95)},
+        {**_offer(130), "store_id": "c"},
+    ]
+    assert [o["store_id"] for o in expert.filter_offers(offers, {}, {})] == ["c"]
+    watch = {"expert_include_display": True}
+    assert [o["store_id"] for o in expert.filter_offers(offers, watch, {})] == ["a", "c"]

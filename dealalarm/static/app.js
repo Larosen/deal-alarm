@@ -75,7 +75,8 @@ function renderWatch(w) {
         <span class="shop-name"></span>
         <span class="price"></span>
       </div>
-      <div class="shop-detail"></div>`;
+      <div class="shop-detail"></div>
+      <div class="shop-scan"></div>`;
     const name = $(".shop-name", el);
     if (r && r.url) {
       const a = document.createElement("a");
@@ -94,6 +95,18 @@ function renderWatch(w) {
     $(".price", el).textContent = price;
     $(".shop-detail", el).textContent = detail;
     if (r && r.title) $(".shop-detail", el).title = r.title;
+    if (r && r.scan) {
+      const sc = r.scan;
+      const scanEl = $(".shop-scan", el);
+      const info = document.createElement("span");
+      info.textContent = `Filialen: ${sc.checked}/${sc.planned} in diesem Lauf · ${sc.known}/${sc.total} bekannt`
+        + (sc.aborted ? " · gedrosselt, Fortsetzung im nächsten Lauf" : "");
+      const btn = document.createElement("button");
+      btn.className = "linklike";
+      btn.textContent = "Alle Filialpreise";
+      btn.addEventListener("click", () => openStores(w, shop));
+      scanEl.append(info, btn);
+    }
     shops.append(el);
   }
   card.classList.toggle("deal", anyDeal);
@@ -112,6 +125,56 @@ function renderWatch(w) {
   });
   return card;
 }
+
+// ---------- Filialpreise ----------
+const storesDialog = $("#stores-dialog");
+let storesData = null;
+
+async function openStores(w, shop) {
+  $("#stores-title").textContent = `${w.name} – ${SHOP_LABELS[shop]}: Preise aller Filialen`;
+  $("#stores-body").innerHTML = '<tr><td colspan="7">Lade …</td></tr>';
+  storesDialog.showModal();
+  try {
+    storesData = await api("GET", `/api/watches/${w.id}/stores?shop=${shop}`);
+    renderStores();
+  } catch (e) { $("#stores-body").innerHTML = ""; $("#stores-summary").textContent = e.message; }
+}
+
+function renderStores() {
+  const onlyMatch = $("#stores-only-match").checked;
+  const rows = storesData.stores.filter((r) => !onlyMatch || r.matches_filter);
+  const prices = storesData.stores.map((r) => r.total_price);
+  const min = prices.length ? Math.min(...prices) : null, max = prices.length ? Math.max(...prices) : null;
+  $("#stores-summary").textContent = `${storesData.stores.length} Filialen mit Angebot (Spanne ${euro(min)} – ${euro(max)}), `
+    + `${storesData.unavailable} ohne Angebot · Wunschpreis ${euro(storesData.target_price)}`;
+  const body = $("#stores-body");
+  body.replaceChildren();
+  rows.forEach((r, i) => {
+    const tr = document.createElement("tr");
+    if (r.total_price <= storesData.target_price) tr.classList.add("deal");
+    if (!r.matches_filter) tr.classList.add("nomatch");
+    if (r.stale) tr.classList.add("stale");
+    const stock = [r.online_stock > 0 ? `online ${r.online_stock}` : "", r.store_stock > 0 ? `Markt ${r.store_stock}` : ""]
+      .filter(Boolean).join(", ") || "–";
+    const cells = [String(i + 1), r.store_name, euro(r.price), euro(r.shipping), euro(r.total_price), stock, when(r.checked)];
+    cells.forEach((text, idx) => {
+      const td = document.createElement("td");
+      if (idx === 1) {
+        td.className = "name";
+        if (r.url) { const a = document.createElement("a"); a.href = r.url; a.target = "_blank"; a.rel = "noopener"; a.textContent = text; td.append(a); }
+        else td.textContent = text;
+        if (r.on_display) td.append(Object.assign(document.createElement("span"), { className: "tag", textContent: "Ausstellungsstück" }));
+        if (r.stale) td.append(Object.assign(document.createElement("span"), { className: "tag", textContent: "veraltet" }));
+      } else td.textContent = text;
+      if (idx >= 2 && idx <= 4) td.classList.add("num");
+      if (idx === 4) td.classList.add("total");
+      tr.append(td);
+    });
+    body.append(tr);
+  });
+  if (!rows.length) body.innerHTML = '<tr><td colspan="7">Keine Angebote</td></tr>';
+}
+$("#stores-only-match").addEventListener("change", () => storesData && renderStores());
 
 // ---------- Formular-Helfer ----------
 function fillForm(form, values) {
@@ -195,6 +258,9 @@ const settingsForm = $("#settings-form");
 $("#btn-settings").addEventListener("click", () => {
   settingsForm.reset();
   fillForm(settingsForm, state.settings);
+  $("#limiter-info").textContent = Object.entries(state.limiters || {})
+    .map(([n, l]) => `${n}: aktuell ${l.rate_per_min}/min, ${l.requests} Anfragen, ${l.throttled}× gedrosselt${l.paused ? " (Pause)" : ""}`)
+    .join(" · ");
   $("#settings-error").textContent = "";
   $("#test-result").textContent = "";
   settingsDialog.showModal();
