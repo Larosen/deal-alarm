@@ -55,7 +55,8 @@
       <label>Produkt-URL oder Suchbegriff <span class="muted">(Onlineshop- oder Markt-URL)</span>
         <input name="euronics_query" placeholder="https://www.euronics.de/… (leer = Suche über EAN)">
       </label>
-      <label class="inline"><input type="checkbox" name="euronics_all_stores" checked> Alle Märkte aus der Marktliste durchsuchen</label>
+      <label class="inline"><input type="checkbox" name="euronics_all_stores" checked> Alle Märkte einzeln durchsuchen (nicht nur den Onlineshop)</label>
+      <label class="narrow">Umkreis um deine PLZ (km, 0 = ganz Deutschland)<input name="euronics_max_distance" inputmode="numeric" value="0"></label>
       <label>EAN <span class="muted">(wird bei expert automatisch übernommen)</span>
         <input name="ean" inputmode="numeric" placeholder="0195950543742">
       </label>
@@ -120,10 +121,13 @@
     </fieldset>
     <fieldset>
       <legend>Euronics- &amp; media@home-Märkte</legend>
-      <p class="hint">Eine Markt-URL pro Zeile, optional mit Namen davor: <code>Buddenhagen | https://www.euronics.de/hamburg-buddenhagen</code>.
-        Die URL findest du in der <a href="https://www.euronics.de/haendlersuche" target="_blank" rel="noopener">Händlersuche</a> unter „weitere Details“.
-        Ein Händler mit mehreren Filialen hat meist einen gemeinsamen Shop – dann reicht ein Eintrag.</p>
-      <textarea name="euronics_stores" rows="6" spellcheck="false" placeholder="https://www.euronics.de/hamburg-buddenhagen&#10;https://www.mediaathome.de/hamburg-badje-ott"></textarea>
+      <label class="inline"><input type="checkbox" name="euronics_use_directory" checked> Händlerverzeichnis verwenden (alle Märkte der Euronics-Händlersuche)</label>
+      <p class="hint">Das Verzeichnis stammt aus den Daten der Händlersuche, gesammelt vom offenen Projekt
+        <a href="https://www.alltheplaces.xyz" target="_blank" rel="noopener">All The Places</a>, und wird wöchentlich aktualisiert.
+        Händler mit mehreren Filialen haben einen gemeinsamen Shop und zählen einmal.
+        Fehlt ein Markt, trag ihn unten ein – eine Markt-URL pro Zeile, optional mit Namen davor:
+        <code>Buddenhagen | https://www.euronics.de/hamburg-buddenhagen</code>.</p>
+      <textarea name="euronics_stores" rows="6" spellcheck="false" placeholder="Zusätzliche Märkte (optional), z. B.&#10;Mein Markt | https://www.euronics.de/ort-haendler"></textarea>
       <div id="stores-preview" class="muted small"></div>
     </fieldset>
     <p id="settings-error" class="error"></p>

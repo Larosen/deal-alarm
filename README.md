@@ -17,8 +17,9 @@ und durchsucht auf Wunsch alle expert-Filialen inkl. Direktabzug/Aktionspreis un
   - optional Ausstellungsstücke und nur lokal verfügbare Angebote im Umkreis deiner PLZ
 - **Euronics & media@home**: Onlineshop und **jeder Markt einzeln**
   - Produkt-URL (Onlineshop oder ein Markt) oder Suche über die EAN (wird automatisch übernommen)
-  - Märkte als Liste in den Einstellungen, z. B. `https://www.euronics.de/hamburg-buddenhagen`
-    oder `https://www.mediaathome.de/hamburg-badje-ott` (aus der Händlersuche unter „weitere Details“)
+  - **Händlerverzeichnis mit allen 361 Shops** (300 euronics.de, 61 media@home) aus der Euronics-Händlersuche,
+    wöchentlich aktualisiert; optional nur Märkte im Umkreis deiner PLZ
+  - eigene Märkte zusätzlich eintragbar, z. B. `https://www.euronics.de/hamburg-buddenhagen`
   - eigenes Rate-Limit pro Domain (euronics.de und mediaathome.de)
 - Zeitplan mit einstellbarem Intervall (Standard 120 Min.) und Zufallsabweichung (Standard ± 10 Min.)
 - ntfy mit eigenem Server, Topic, optionalem Access-Token und Priorität; Testnachricht-Button
@@ -91,8 +92,13 @@ Der Dealalarm enthält Gerät, Preis, Wunschpreis und Filiale. Ein Tipp auf die 
   Produkt nicht (404 oder Weiterleitung aus dem Markt heraus), gilt es dort als nicht verfügbar.
   Händler mit mehreren Filialen (z. B. Buddenhagen) haben meist einen gemeinsamen Shop – ein Eintrag genügt.
 - Bei Euronics werden keine Versandkosten ausgelesen; verglichen wird der Artikelpreis.
-- Die Marktliste wird derzeit von Hand gepflegt. Ein automatischer Import aus der Händlersuche ist möglich,
-  sobald bekannt ist, woher die Karte ihre Daten lädt.
+- **Händlerverzeichnis:** Die Euronics-Händlersuche lädt ihre Märkte über den Kartendienst Woosmap. Diese
+  Daten sammelt das offene Projekt [All The Places](https://www.alltheplaces.xyz) (Spider `euronics_de`,
+  Lizenz CC0). Der Deal-Alarm lädt sie wöchentlich von dort; ist das nicht möglich, wird die mitgelieferte
+  Momentaufnahme `dealalarm/shops/euronics_markets.json` verwendet.
+- **Dauer:** Bei 6 Anfragen/Minute dauert ein vollständiger Durchlauf durch alle ~300 euronics.de-Shops
+  ca. 50 Minuten pro Gerät (media@home läuft parallel). Für mehrere Geräte den Umkreis begrenzen oder
+  „Märkte pro Zyklus“ setzen – dann rotiert der Scan über mehrere Zyklen durch alle Märkte.
 - Eine Prüfung über alle expert-Filialen dauert ca. eine Minute pro Gerät. Bitte das Intervall nicht zu
   klein wählen (Minimum 15 Minuten), damit die Shops nicht unnötig belastet werden.
 

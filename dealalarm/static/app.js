@@ -156,7 +156,8 @@ function renderStores() {
     if (r.stale) tr.classList.add("stale");
     const stock = [r.online_stock > 0 ? `online ${r.online_stock}` : "", r.store_stock > 0 ? `Markt ${r.store_stock}` : ""]
       .filter(Boolean).join(", ") || r.availability || "–";
-    const cells = [String(i + 1), r.store_name, euro(r.price), euro(r.shipping), euro(r.total_price), stock, when(r.checked)];
+    const name = r.distance_km != null ? `${r.store_name} · ${r.distance_km} km` : r.store_name;
+    const cells = [String(i + 1), name, euro(r.price), euro(r.shipping), euro(r.total_price), stock, when(r.checked)];
     cells.forEach((text, idx) => {
       const td = document.createElement("td");
       if (idx === 1) {
@@ -200,7 +201,7 @@ const WATCH_DEFAULTS = {
   id: "", name: "", target_price: "", enabled: true,
   expert_enabled: true, expert_query: "", expert_all_branches: true, expert_include_display: false,
   expert_include_local: false, expert_max_distance: 50,
-  euronics_enabled: true, euronics_query: "", euronics_all_stores: true, ean: "",
+  euronics_enabled: true, euronics_query: "", euronics_all_stores: true, euronics_max_distance: 0, ean: "",
 };
 
 function openWatchDialog(w) {
@@ -279,12 +280,25 @@ settingsForm.addEventListener("submit", async (ev) => {
 async function previewStores() {
   const out = $("#stores-preview");
   try {
-    const stores = await api("POST", "/api/euronics/stores/preview", { text: settingsForm.elements.euronics_stores.value });
-    out.textContent = stores.length ? `${stores.length} Märkte erkannt: ${stores.map((s) => s.name).join(", ")}` : "Keine Märkte eingetragen – es wird nur der Onlineshop geprüft.";
+    const f = settingsForm.elements;
+    const res = await api("POST", "/api/euronics/stores/preview", { settings: {
+      euronics_stores: f.euronics_stores.value, euronics_use_directory: f.euronics_use_directory.checked, plz: f.plz.value } });
+    const rate = Number(f.euronics_rate_per_min.value) || 6;
+    const parts = [];
+    if (res.directory_count) parts.push(`Verzeichnis: ${res.directory_count} Shops (${res.directory_source})`);
+    if (res.manual.length) parts.push(`eigene Einträge: ${res.manual.map((s) => s.name).join(", ")}`);
+    const minutes = Math.max(0, ...Object.values(res.per_host)) / rate;
+    parts.push(res.total
+      ? `zusammen ${res.total} Märkte (${Object.entries(res.per_host).map(([h, n]) => `${h}: ${n}`).join(", ")}) – `
+        + `ein vollständiger Durchlauf dauert pro Gerät ca. ${Math.ceil(minutes)} Min. bei ${rate} Anfragen/Min.`
+      : "keine Märkte – es wird nur der Onlineshop geprüft");
+    out.textContent = parts.join(" · ");
   } catch (e) { out.textContent = e.message; }
 }
 let previewTimer = null;
-settingsForm.elements.euronics_stores.addEventListener("input", () => { clearTimeout(previewTimer); previewTimer = setTimeout(previewStores, 400); });
+for (const name of ["euronics_stores", "euronics_use_directory", "euronics_rate_per_min", "plz"]) {
+  settingsForm.elements[name].addEventListener("input", () => { clearTimeout(previewTimer); previewTimer = setTimeout(previewStores, 400); });
+}
 
 $("#btn-test-notify").addEventListener("click", async () => {
   const out = $("#test-result");

@@ -25,7 +25,8 @@ DEFAULT_SETTINGS = {
     "expert_stores_per_cycle": 0,      # 0 = alle Filialen in jedem Zyklus
     "euronics_rate_per_min": 6,        # gilt je Domain (euronics.de, mediaathome.de)
     "euronics_stores_per_cycle": 0,    # 0 = alle Märkte in jedem Zyklus
-    "euronics_stores": "",             # Markt-URLs, eine pro Zeile
+    "euronics_use_directory": True,    # alle Märkte aus dem Händlerverzeichnis
+    "euronics_stores": "",             # zusätzliche Markt-URLs, eine pro Zeile
     "price_max_age_hours": 24,         # ältere Filialpreise zählen nicht mehr für den Dealalarm
 }
 
@@ -43,7 +44,8 @@ DEFAULT_WATCH = {
     # Euronics
     "euronics_enabled": True,
     "euronics_query": "",        # URL oder EAN/Suchbegriff
-    "euronics_all_stores": True,  # alle Märkte aus der Marktliste
+    "euronics_all_stores": True,  # Märkte durchsuchen (nicht nur den Onlineshop)
+    "euronics_max_distance": 0,   # Umkreis in km um die PLZ, 0 = ganz Deutschland
     "ean": "",
 }
 

@@ -17,10 +17,10 @@ log = logging.getLogger(__name__)
 UI_USER = os.environ.get("UI_USER", "admin")
 UI_PASSWORD = os.environ.get("UI_PASSWORD", "")
 
-FLOAT_FIELDS = {"target_price", "expert_max_distance"}
+FLOAT_FIELDS = {"target_price", "expert_max_distance", "euronics_max_distance"}
 BOOL_FIELDS = {
     "enabled", "expert_enabled", "expert_all_branches", "expert_include_display",
-    "expert_include_local", "euronics_enabled", "euronics_all_stores", "scheduler_enabled",
+    "expert_include_local", "euronics_enabled", "euronics_all_stores", "euronics_use_directory", "scheduler_enabled",
 }
 INT_FIELDS = {
     "interval_minutes", "jitter_minutes", "ntfy_priority", "expert_rate_per_min", "expert_workers",
@@ -109,6 +109,7 @@ def create_app(start_scheduler=True):
                 "checked": entry["checked"],
                 "stale": scan.age_hours(entry["checked"]) > max_age,
                 "matches_filter": store_id in accepted,
+                "distance_km": offer.get("distance_km"),
                 "url": offer.get("url") or (expert.store_url(product_url, store_id) if shop == "expert" and product_url else None),
             })
         rows.sort(key=lambda r: r["total_price"])
@@ -165,9 +166,23 @@ def create_app(start_scheduler=True):
 
     @app.post("/api/euronics/stores/preview")
     def euronics_store_preview():
-        """Zeigt, welche Märkte aus dem eingegebenen Text erkannt werden."""
-        stores = euronics.parse_store_list((request.get_json() or {}).get("text", ""))
-        return jsonify([{"name": s["name"], "url": s["base"]} for s in stores])
+        """Zeigt, welche Märkte mit den eingegebenen Einstellungen geprüft würden."""
+        body = request.get_json() or {}
+        settings = {**storage.get_settings(), **_clean(body.get("settings") or {})}
+        manual = euronics.parse_store_list(settings.get("euronics_stores"))
+        directory = euronics.load_directory() if settings.get("euronics_use_directory") else None
+        markets = euronics.select_markets({"euronics_all_stores": True}, settings)
+        per_host = {}
+        for store in markets:
+            host = store["id"].split("/")[0]
+            per_host[host] = per_host.get(host, 0) + 1
+        return jsonify(
+            manual=[{"name": s["name"], "url": s["base"]} for s in manual],
+            directory_source=directory["source"] if directory else None,
+            directory_count=len(directory["shops"]) if directory else 0,
+            total=len(markets),
+            per_host=per_host,
+        )
 
     @app.get("/api/expert/search")
     def expert_search():
