@@ -311,3 +311,72 @@ def test_select_markets_radius_and_manual_names(monkeypatch):
     assert next(s for s in near if s["id"].endswith("hamburg-stahn"))["name"] == "Mein Lieblingsmarkt"
     assert len(euronics.select_markets({}, settings)) > 300
     assert euronics.select_markets({"euronics_all_stores": False}, settings) == []
+
+
+def test_title_from_path():
+    assert euronics.title_from_path(PATH) == "9150cc Series 9 Sport Trocken Nass Rasierer"
+
+
+def test_expert_not_in_assortment_is_no_error(monkeypatch):
+    monkeypatch.setattr(expert, "find_by_ean", lambda ean: None)
+    result, state = expert.check({"expert_query": "", "ean": "4065465374635"}, {}, {"alt": 1})
+    assert result["available"] is False and "Nicht im expert-Sortiment" in result["detail"] and state == {}
+
+
+def test_shop_active_uses_ean_for_both_shops():
+    watch = {"expert_enabled": True, "euronics_enabled": True, "ean": "4065465374635"}
+    assert checker._shop_active(watch, "expert") and checker._shop_active(watch, "euronics")
+    assert not checker._shop_active({"expert_enabled": True}, "expert")
+
+
+def _client(tmp_path, monkeypatch):
+    from dealalarm import storage
+    monkeypatch.setattr(storage, "DATA_DIR", str(tmp_path))
+    monkeypatch.setattr(storage, "DATA_FILE", str(tmp_path / "state.json"))
+    from dealalarm.app import create_app
+    return create_app(start_scheduler=False).test_client()
+
+
+def test_resolve_euronics_url_finds_expert_by_ean(tmp_path, monkeypatch):
+    client = _client(tmp_path, monkeypatch)
+    monkeypatch.setattr(expert, "find_by_ean", lambda ean: {"title": "BRAUN Series 9", "ean": ean,
+                                                            "url": "https://www.expert.de/x.html", "webcode": "1"})
+    art = client.get("/api/article/resolve", query_string={"q": f"https://www.mediaathome.de/hamburg-badje-ott/{PATH}"}).json["article"]
+    assert art["ean"] == "4065465374635" and art["expert_query"] == "https://www.expert.de/x.html"
+    assert art["euronics_query"] == f"https://www.euronics.de/{PATH}" and art["title"] == "BRAUN Series 9"
+
+    monkeypatch.setattr(expert, "find_by_ean", lambda ean: None)
+    art = client.get("/api/article/resolve", query_string={"q": f"https://www.euronics.de/{PATH}"}).json["article"]
+    assert art["expert_found"] is False and art["title"].startswith("9150cc")
+
+
+def test_resolve_unknown_ean_still_creates_article(tmp_path, monkeypatch):
+    client = _client(tmp_path, monkeypatch)
+    monkeypatch.setattr(expert, "find_by_ean", lambda ean: None)
+    art = client.get("/api/article/resolve", query_string={"q": "4065465374635"}).json["article"]
+    assert art["ean"] == "4065465374635" and art["expert_found"] is False
+    res = client.post("/api/watches", json={"name": "Braun", "target_price": 250, "ean": "4065465374635"})
+    assert res.status_code == 201
+
+
+def test_expert_checks_all_listings_of_an_ean(monkeypatch):
+    product = {"title": "AirPods Pro 3", "ean": "0195950543742", "webcode": "A", "url": "https://e/A.html"}
+    monkeypatch.setattr(expert, "find_by_ean", lambda ean: product)
+    monkeypatch.setattr(expert, "search", lambda term: [
+        {**product, "webcode": "B", "url": "https://e/B.html"},
+        {**product, "webcode": "C", "url": "https://e/C.html", "ean": "andere"},
+    ])
+    monkeypatch.setattr(expert, "list_stores", lambda all_branches: [
+        {"id": "e_1", "exp_id": "1", "name": "Filiale 1", "coordinates": None}])
+    prices = {"A": 249, "B": 229}
+
+    class Resp:
+        status_code = 200
+        def __init__(self, webcode): self.webcode = webcode
+        def raise_for_status(self): pass
+        def json(self):
+            return {"price": {"bruttoPrice": prices[self.webcode], "onlineStock": 1}, "promotionPrice": {}}
+    monkeypatch.setattr(expert.ratelimit, "request", lambda s, l, m, u, params: Resp(params["webcode"]))
+    result, state = expert.check({"expert_query": "", "ean": product["ean"]}, {}, {})
+    assert state["_webcodes"] == ["A", "B"]
+    assert result["price"] == 229 and result["url"] == "https://e/B.html?branch_id=e_1"

@@ -207,6 +207,13 @@ def product_path(url, stores=()):
     return "/".join(segments)
 
 
+def title_from_path(path):
+    """Lesbarer Titel aus dem letzten Pfadteil, z. B. '9150cc Series 9 Sport Trocken Nass Rasierer'."""
+    slug = path.rstrip("/").split("/")[-1]
+    slug = re.sub(r"-\d{8,14}$", "", slug)
+    return " ".join(w if any(c.isdigit() for c in w) else w.capitalize() for w in slug.split("-"))
+
+
 def ean_from_path(path):
     match = re.search(r"-(\d{13})$", path)
     return match.group(1) if match else ""
