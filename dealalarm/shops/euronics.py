@@ -1,14 +1,25 @@
-"""Preisabfrage bei Euronics über die strukturierten Produktdaten (schema.org) der Shopseite."""
+"""Preisabfrage bei Euronics und media@home – Onlineshop und jeder Markt einzeln.
+
+Jeder Markt hat einen eigenen Shop mit eigenem Pfad, der Produktpfad ist überall gleich:
+
+    https://www.euronics.de/<produktpfad>                ← Onlineshop
+    https://www.euronics.de/<markt>/<produktpfad>        ← Euronics-Markt
+    https://www.mediaathome.de/<markt>/<produktpfad>     ← media@home-Markt
+
+Der Preis wird aus den strukturierten Produktdaten (schema.org) der Seite gelesen.
+"""
 
 import html
 import json
 import re
-from urllib.parse import quote_plus, urljoin
+from urllib.parse import quote_plus, urljoin, urlsplit
 
-from .. import ratelimit
+from .. import ratelimit, scan
 from .common import http_session, parse_price
 
 BASE = "https://www.euronics.de"
+ONLINE_STORE = "online"
+HOSTS = {"www.euronics.de": "Euronics", "www.mediaathome.de": "media@home"}
 
 _JSONLD_RE = re.compile(r'<script[^>]+type=["\']application/ld\+json["\'][^>]*>(.*?)</script>', re.S | re.I)
 _META_RE = re.compile(r'<meta[^>]+(?:itemprop|property|name)=["\']([^"\']+)["\'][^>]*content=["\']([^"\']*)["\']', re.I)
@@ -20,23 +31,75 @@ _TITLE_RE = re.compile(r"<title[^>]*>(.*?)</title>", re.S | re.I)
 THROTTLE_STATUS = {403, 429, 503}
 
 
-def _limiter(settings):
-    return ratelimit.get_limiter("euronics", settings.get("euronics_rate_per_min") or 6, min_per_minute=1)
+def _limiter(settings, url=BASE):
+    """Ein Limiter pro Domain – euronics.de und mediaathome.de drosseln unabhängig voneinander."""
+    host = urlsplit(url).hostname or "www.euronics.de"
+    return ratelimit.get_limiter(host, settings.get("euronics_rate_per_min") or 6, min_per_minute=1)
 
 
-def _get(url, settings):
+def _session():
     session = http_session()
     session.headers["Accept"] = "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+    return session
+
+
+def _get(url, settings, session=None, allow_missing=False):
     try:
-        response = ratelimit.request(session, _limiter(settings), "GET", url,
+        response = ratelimit.request(session or _session(), _limiter(settings, url), "GET", url,
                                      throttle_status=THROTTLE_STATUS, attempts=2, timeout=30)
     except ratelimit.RateLimited:
         raise ratelimit.RateLimited(
-            "Euronics blockiert oder drosselt die Anfragen (HTTP 403/429). "
+            f"{urlsplit(url).hostname} blockiert oder drosselt die Anfragen (HTTP 403/429). "
             "Rechenzentrums-IPs werden oft komplett gesperrt – am besten zuhause laufen lassen."
         )
+    if allow_missing and response.status_code in (404, 410):
+        return None
     response.raise_for_status()
     return response
+
+
+def parse_store_list(text):
+    """Marktliste aus den Einstellungen: eine Markt-URL pro Zeile, optional 'Name | URL'."""
+    stores, seen = [], set()
+    for line in (text or "").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        name, _, url = line.rpartition("|") if "|" in line else ("", "", line)
+        url = url.strip()
+        if "://" not in url:
+            url = "https://" + url
+        parts = urlsplit(url)
+        host = parts.hostname or ""
+        if host in ("euronics.de", "mediaathome.de"):
+            host = "www." + host
+        slug = parts.path.strip("/").split("/")[0] if parts.path.strip("/") else ""
+        if host not in HOSTS or not slug:
+            continue
+        store_id = f"{host}/{slug}"
+        if store_id in seen:
+            continue
+        seen.add(store_id)
+        label = name.strip() or f"{HOSTS[host]} {slug.replace('-', ' ').title()}"
+        stores.append({"id": store_id, "name": label, "base": f"https://{host}/{slug}", "slug": slug})
+    return stores
+
+
+def product_path(url, stores=()):
+    """Produktpfad aus einer Euronics/media@home-URL – ein evtl. Markt-Präfix wird entfernt."""
+    parts = urlsplit(url.strip())
+    segments = [s for s in parts.path.split("/") if s]
+    host = parts.hostname or ""
+    slugs = {s["slug"] for s in stores}
+    # Bei media@home steht immer ein Markt vorne, bei Euronics nur in Marktshops
+    if segments and (segments[0] in slugs or host.endswith("mediaathome.de")) and len(segments) > 1:
+        segments = segments[1:]
+    return "/".join(segments)
+
+
+def ean_from_path(path):
+    match = re.search(r"-(\d{13})$", path)
+    return match.group(1) if match else ""
 
 
 def _iter_jsonld(page):
@@ -121,32 +184,92 @@ def _first_product_link(page, base_url):
     return None
 
 
-def check(watch, settings, store_state):
-    query = (watch.get("euronics_query") or "").strip() or (watch.get("ean") or "").strip()
-    if not query:
+def _resolve_path(watch, settings, stores, store_state):
+    """Produktpfad aus der hinterlegten URL oder per EAN-Suche im Onlineshop."""
+    query = (watch.get("euronics_query") or "").strip()
+    if "euronics.de" in query or "mediaathome.de" in query:
+        return product_path(query.split("#")[0].split("?")[0], stores)
+    ean = (watch.get("ean") or "").strip()
+    term = query or ean
+    if not term:
         raise ValueError("Keine Euronics-URL bzw. EAN hinterlegt")
+    if store_state.get("_query") == term and store_state.get("_product_path"):
+        return store_state["_product_path"]
+    response = _get(f"{BASE}/search?sSearch={quote_plus(term)}", settings)
+    if parse_product_page(response.text, response.url):
+        return product_path(response.url.split("?")[0], stores)
+    link = _first_product_link(response.text, response.url)
+    if link:
+        return product_path(link, stores)
+    raise LookupError("Produkt bei Euronics nicht gefunden – bitte direkte Produkt-URL angeben")
 
-    if "euronics.de" in query:
-        url = query.split("#")[0]
-    else:
-        url = f"{BASE}/search?sSearch={quote_plus(query)}"
 
-    _limiter(settings).start_scan()
-    response = _get(url, settings)
-    product = parse_product_page(response.text, response.url)
-    if product is None and "euronics.de" not in query:
-        link = _first_product_link(response.text, response.url)
-        if link:
-            response = _get(link, settings)
-            product = parse_product_page(response.text, response.url)
-    if product is None:
-        raise LookupError("Kein Preis auf der Euronics-Seite gefunden – bitte direkte Produkt-URL angeben")
-
+def to_offer(product):
+    if not product or not product["available"] or product["price"] is None:
+        return None
     return {
+        "price": product["price"],
+        "shipping": None,  # Versandkosten stehen nicht in den Produktdaten
+        "total_price": product["price"],
+        "online_stock": 0,
+        "store_stock": 0,
+        "on_display": False,
+        "availability": "verfügbar",
         "title": product["title"],
-        "url": product["url"],
-        "ean": product["ean"],
-        "price": product["price"] if product["available"] else None,
-        "available": product["available"],
-        "detail": "Euronics Onlineshop" if product["available"] else "Nicht verfügbar",
-    }, store_state
+    }
+
+
+def check(watch, settings, store_state):
+    """Fragt Onlineshop und – falls gewünscht – jeden Markt einzeln ab."""
+    markets = parse_store_list(settings.get("euronics_stores")) if watch.get("euronics_all_stores", True) else []
+    path = _resolve_path(watch, settings, markets, store_state)
+    if store_state.get("_product_path") != path:
+        store_state = {}
+    stores = [{"id": ONLINE_STORE, "name": "Euronics Onlineshop", "base": BASE}] + markets
+    session = _session()
+    for host in HOSTS:
+        _limiter(settings, f"https://{host}/").start_scan()
+
+    def fetch(store):
+        url = f"{store['base']}/{path}"
+        response = _get(url, settings, session=session, allow_missing=True)
+        if response is None:
+            return None  # Produkt nicht im Sortiment des Markts
+        if store["id"] != ONLINE_STORE and f"/{store['slug']}/" not in urlsplit(response.url).path + "/":
+            return None  # Weiterleitung weg vom Markt: nicht im Sortiment
+        offer = to_offer(parse_product_page(response.text, url))
+        if offer:
+            offer["url"] = url
+        return offer
+
+    budget = int(settings.get("euronics_stores_per_cycle") or 0) or None
+    meta = {k: v for k, v in store_state.items() if k.startswith("_")}
+    stores_state = {k: v for k, v in store_state.items() if not k.startswith("_")}
+    stores_state, stats = scan.run(stores, stores_state, fetch, budget=budget, workers=len(HOSTS))
+
+    offers = scan.fresh_offers(stores_state, float(settings.get("price_max_age_hours") or 24))
+    best = offers[0] if offers else None
+    title = next((o.get("title") for o in offers if o.get("title")), "") or meta.get("_title", "")
+    detail = "In keinem Markt verfügbar"
+    if best:
+        detail = best["store_name"] + (f", {len(offers)} Märkte mit Angebot" if len(offers) > 1 else "")
+    if stats["checked"] == 0 and stats["planned"]:
+        if stats["aborted"]:
+            raise ratelimit.RateLimited("Euronics blockiert oder drosselt die Anfragen (HTTP 403/429) – "
+                                        "Rechenzentrums-IPs werden oft komplett gesperrt, am besten zuhause laufen lassen.")
+    result = {
+        "title": title,
+        "url": best["url"] if best else f"{BASE}/{path}",
+        "ean": ean_from_path(path),
+        "price": best["total_price"] if best else None,
+        "available": best is not None,
+        "detail": detail,
+        "scan": stats,
+    }
+    new_meta = {"_product_path": path, "_title": title,
+                "_query": (watch.get("euronics_query") or "").strip() or (watch.get("ean") or "").strip()}
+    return result, {**stores_state, **new_meta}
+
+
+def filter_offers(offers, watch, settings):
+    return offers

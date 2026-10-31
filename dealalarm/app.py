@@ -8,7 +8,9 @@ import threading
 from flask import Flask, Response, jsonify, render_template, request
 
 from . import checker, notifier, ratelimit, scan, storage
-from .shops import expert
+from .shops import euronics, expert
+
+SHOP_MODULES = {"expert": expert, "euronics": euronics}
 
 log = logging.getLogger(__name__)
 
@@ -18,11 +20,11 @@ UI_PASSWORD = os.environ.get("UI_PASSWORD", "")
 FLOAT_FIELDS = {"target_price", "expert_max_distance"}
 BOOL_FIELDS = {
     "enabled", "expert_enabled", "expert_all_branches", "expert_include_display",
-    "expert_include_local", "euronics_enabled", "scheduler_enabled",
+    "expert_include_local", "euronics_enabled", "euronics_all_stores", "scheduler_enabled",
 }
 INT_FIELDS = {
     "interval_minutes", "jitter_minutes", "ntfy_priority", "expert_rate_per_min", "expert_workers",
-    "expert_stores_per_cycle", "euronics_rate_per_min", "price_max_age_hours",
+    "expert_stores_per_cycle", "euronics_rate_per_min", "euronics_stores_per_cycle", "price_max_age_hours",
 }
 
 
@@ -85,13 +87,13 @@ def create_app(start_scheduler=True):
             return jsonify(error="Nicht gefunden"), 404
         settings = storage.get_settings()
         shop = request.args.get("shop", "expert")
+        if shop not in SHOP_MODULES:
+            return jsonify(error="Unbekannter Shop"), 400
         store_state = (watch.get("store_prices") or {}).get(shop) or {}
         product_url = store_state.get("_product_url", "")
         rows, unavailable = [], 0
-        accepted = set()
-        if shop == "expert":
-            all_offers = scan.fresh_offers(store_state, float("inf"))
-            accepted = {o["store_id"] for o in expert.filter_offers(all_offers, watch, settings)}
+        all_offers = scan.fresh_offers(store_state, float("inf"))
+        accepted = {o["store_id"] for o in SHOP_MODULES[shop].filter_offers(all_offers, watch, settings)}
         max_age = float(settings.get("price_max_age_hours") or 24)
         for store_id, entry in store_state.items():
             if store_id.startswith("_"):
@@ -107,7 +109,7 @@ def create_app(start_scheduler=True):
                 "checked": entry["checked"],
                 "stale": scan.age_hours(entry["checked"]) > max_age,
                 "matches_filter": store_id in accepted,
-                "url": expert.store_url(product_url, store_id) if shop == "expert" and product_url else None,
+                "url": offer.get("url") or (expert.store_url(product_url, store_id) if shop == "expert" and product_url else None),
             })
         rows.sort(key=lambda r: r["total_price"])
         return jsonify(stores=rows, unavailable=unavailable, target_price=watch["target_price"])
@@ -160,6 +162,12 @@ def create_app(start_scheduler=True):
             tags=["white_check_mark"],
         )
         return jsonify(ok=True)
+
+    @app.post("/api/euronics/stores/preview")
+    def euronics_store_preview():
+        """Zeigt, welche Märkte aus dem eingegebenen Text erkannt werden."""
+        stores = euronics.parse_store_list((request.get_json() or {}).get("text", ""))
+        return jsonify([{"name": s["name"], "url": s["base"]} for s in stores])
 
     @app.get("/api/expert/search")
     def expert_search():

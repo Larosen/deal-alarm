@@ -89,7 +89,7 @@ def check_watch(watch, settings):
             result = {"error": str(exc), "price": None, "available": False}
         result["checked_at"] = _now()
 
-        if shop == "expert" and result.get("ean") and not watch.get("ean"):
+        if result.get("ean") and not watch.get("ean"):
             watch["ean"] = result["ean"]
             storage.set_watch_field(watch["id"], "ean", result["ean"])
 

@@ -52,9 +52,10 @@
 
     <fieldset>
       <legend><label class="inline"><input type="checkbox" name="euronics_enabled" checked> Euronics</label></legend>
-      <label>Produkt-URL oder Suchbegriff
+      <label>Produkt-URL oder Suchbegriff <span class="muted">(Onlineshop- oder Markt-URL)</span>
         <input name="euronics_query" placeholder="https://www.euronics.de/… (leer = Suche über EAN)">
       </label>
+      <label class="inline"><input type="checkbox" name="euronics_all_stores" checked> Alle Märkte aus der Marktliste durchsuchen</label>
       <label>EAN <span class="muted">(wird bei expert automatisch übernommen)</span>
         <input name="ean" inputmode="numeric" placeholder="0195950543742">
       </label>
@@ -113,8 +114,17 @@
         <label>expert: Filialen pro Zyklus <span class="muted">(0 = alle)</span><input name="expert_stores_per_cycle" inputmode="numeric"></label>
         <label>Euronics: max. Anfragen/Minute<input name="euronics_rate_per_min" inputmode="numeric"></label>
       </div>
+      <label class="narrow">Euronics: Märkte pro Zyklus <span class="muted">(0 = alle)</span><input name="euronics_stores_per_cycle" inputmode="numeric"></label>
       <label class="narrow">Filialpreise gelten max. (Stunden)<input name="price_max_age_hours" inputmode="numeric"></label>
       <div id="limiter-info" class="muted small"></div>
+    </fieldset>
+    <fieldset>
+      <legend>Euronics- &amp; media@home-Märkte</legend>
+      <p class="hint">Eine Markt-URL pro Zeile, optional mit Namen davor: <code>Buddenhagen | https://www.euronics.de/hamburg-buddenhagen</code>.
+        Die URL findest du in der <a href="https://www.euronics.de/haendlersuche" target="_blank" rel="noopener">Händlersuche</a> unter „weitere Details“.
+        Ein Händler mit mehreren Filialen hat meist einen gemeinsamen Shop – dann reicht ein Eintrag.</p>
+      <textarea name="euronics_stores" rows="6" spellcheck="false" placeholder="https://www.euronics.de/hamburg-buddenhagen&#10;https://www.mediaathome.de/hamburg-badje-ott"></textarea>
+      <div id="stores-preview" class="muted small"></div>
     </fieldset>
     <p id="settings-error" class="error"></p>
     <div class="dialog-actions">

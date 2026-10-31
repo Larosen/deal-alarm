@@ -195,3 +195,77 @@ def test_expert_filters():
     assert [o["store_id"] for o in expert.filter_offers(offers, {}, {})] == ["c"]
     watch = {"expert_include_display": True}
     assert [o["store_id"] for o in expert.filter_offers(offers, watch, {})] == ["a", "c"]
+
+
+PATH = "haus-und-haushalt/koerperpflege-und-gesundheit/rasierer-und-haarentfernung/herrenrasierer/9150cc-series-9-sport-trocken-nass-rasierer-4065465374635"
+MARKETS = """
+# Hamburg
+https://www.euronics.de/hamburg-buddenhagen
+Badje-Ott | www.mediaathome.de/hamburg-badje-ott/
+https://www.euronics.de/hamburg-stahn
+https://www.euronics.de/hamburg-buddenhagen/irgendwas
+https://example.com/kein-markt
+"""
+
+
+def test_parse_store_list():
+    stores = euronics.parse_store_list(MARKETS)
+    assert [s["id"] for s in stores] == ["www.euronics.de/hamburg-buddenhagen", "www.mediaathome.de/hamburg-badje-ott",
+                                         "www.euronics.de/hamburg-stahn"]
+    assert stores[1]["name"] == "Badje-Ott" and stores[1]["base"] == "https://www.mediaathome.de/hamburg-badje-ott"
+    assert stores[0]["name"] == "Euronics Hamburg Buddenhagen"
+
+
+def test_product_path_strips_market_prefix():
+    stores = euronics.parse_store_list(MARKETS)
+    assert euronics.product_path(f"https://www.euronics.de/{PATH}", stores) == PATH
+    assert euronics.product_path(f"https://www.euronics.de/hamburg-buddenhagen/{PATH}", stores) == PATH
+    assert euronics.product_path(f"https://www.mediaathome.de/hamburg-badje-ott/{PATH}", stores) == PATH
+    assert euronics.ean_from_path(PATH) == "4065465374635"
+
+
+class _Page:
+    def __init__(self, url, price=None, status=200):
+        self.url = url
+        self.status_code = status
+        ld = {"@type": "Product", "name": "Braun Series 9", "offers": {"price": price, "availability": "InStock"}}
+        self.text = f'<script type="application/ld+json">{json.dumps(ld)}</script>' if price else "<html></html>"
+
+
+def test_euronics_scans_every_market(monkeypatch):
+    pages = {
+        f"https://www.euronics.de/{PATH}": _Page(f"https://www.euronics.de/{PATH}", 329.0),
+        f"https://www.euronics.de/hamburg-buddenhagen/{PATH}": _Page(f"https://www.euronics.de/hamburg-buddenhagen/{PATH}", 299.0),
+        # nicht im Sortiment: Weiterleitung auf den Onlineshop
+        f"https://www.mediaathome.de/hamburg-badje-ott/{PATH}": _Page(f"https://www.mediaathome.de/{PATH}", 279.0),
+        f"https://www.euronics.de/hamburg-stahn/{PATH}": None,  # 404
+    }
+    monkeypatch.setattr(euronics, "_get", lambda url, settings, session=None, allow_missing=False: pages[url])
+    watch = {"euronics_query": f"https://www.euronics.de/hamburg-stahn/{PATH}", "euronics_all_stores": True}
+    settings = {"euronics_stores": MARKETS, "price_max_age_hours": 24}
+    result, state = euronics.check(watch, settings, {})
+    assert result["price"] == 299.0 and result["detail"].startswith("Euronics Hamburg Buddenhagen")
+    assert result["ean"] == "4065465374635" and result["title"] == "Braun Series 9"
+    assert result["url"] == f"https://www.euronics.de/hamburg-buddenhagen/{PATH}"
+    assert result["scan"]["checked"] == 4
+    assert state["www.mediaathome.de/hamburg-badje-ott"]["offer"] is None
+    assert state["_product_path"] == PATH
+
+
+def test_euronics_partial_block_keeps_other_domain(monkeypatch):
+    def fake_get(url, settings, session=None, allow_missing=False):
+        if "mediaathome" in url:
+            raise ratelimit.RateLimited("gesperrt")
+        return _Page(url, 300.0)
+    monkeypatch.setattr(euronics, "_get", fake_get)
+    watch = {"euronics_query": f"https://www.euronics.de/{PATH}"}
+    result, state = euronics.check(watch, {"euronics_stores": MARKETS}, {})
+    assert result["scan"]["aborted"] and result["scan"]["checked"] == 3 and result["price"] == 300.0
+
+
+def test_euronics_fully_blocked_raises(monkeypatch):
+    def fake_get(*a, **k):
+        raise ratelimit.RateLimited("gesperrt")
+    monkeypatch.setattr(euronics, "_get", fake_get)
+    with pytest.raises(ratelimit.RateLimited):
+        euronics.check({"euronics_query": f"https://www.euronics.de/{PATH}"}, {"euronics_stores": MARKETS}, {})

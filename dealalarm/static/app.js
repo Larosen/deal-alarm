@@ -155,7 +155,7 @@ function renderStores() {
     if (!r.matches_filter) tr.classList.add("nomatch");
     if (r.stale) tr.classList.add("stale");
     const stock = [r.online_stock > 0 ? `online ${r.online_stock}` : "", r.store_stock > 0 ? `Markt ${r.store_stock}` : ""]
-      .filter(Boolean).join(", ") || "–";
+      .filter(Boolean).join(", ") || r.availability || "–";
     const cells = [String(i + 1), r.store_name, euro(r.price), euro(r.shipping), euro(r.total_price), stock, when(r.checked)];
     cells.forEach((text, idx) => {
       const td = document.createElement("td");
@@ -200,7 +200,7 @@ const WATCH_DEFAULTS = {
   id: "", name: "", target_price: "", enabled: true,
   expert_enabled: true, expert_query: "", expert_all_branches: true, expert_include_display: false,
   expert_include_local: false, expert_max_distance: 50,
-  euronics_enabled: true, euronics_query: "", ean: "",
+  euronics_enabled: true, euronics_query: "", euronics_all_stores: true, ean: "",
 };
 
 function openWatchDialog(w) {
@@ -262,6 +262,7 @@ $("#btn-settings").addEventListener("click", () => {
     .map(([n, l]) => `${n}: aktuell ${l.rate_per_min}/min, ${l.requests} Anfragen, ${l.throttled}× gedrosselt${l.paused ? " (Pause)" : ""}`)
     .join(" · ");
   $("#settings-error").textContent = "";
+  previewStores();
   $("#test-result").textContent = "";
   settingsDialog.showModal();
 });
@@ -274,6 +275,16 @@ settingsForm.addEventListener("submit", async (ev) => {
     await load();
   } catch (e) { $("#settings-error").textContent = e.message; }
 });
+
+async function previewStores() {
+  const out = $("#stores-preview");
+  try {
+    const stores = await api("POST", "/api/euronics/stores/preview", { text: settingsForm.elements.euronics_stores.value });
+    out.textContent = stores.length ? `${stores.length} Märkte erkannt: ${stores.map((s) => s.name).join(", ")}` : "Keine Märkte eingetragen – es wird nur der Onlineshop geprüft.";
+  } catch (e) { out.textContent = e.message; }
+}
+let previewTimer = null;
+settingsForm.elements.euronics_stores.addEventListener("input", () => { clearTimeout(previewTimer); previewTimer = setTimeout(previewStores, 400); });
 
 $("#btn-test-notify").addEventListener("click", async () => {
   const out = $("#test-result");
