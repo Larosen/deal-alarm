@@ -147,3 +147,4 @@ fieldset.article { border-color: var(--accent); }
   font: .8em/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--bg); white-space: pre-wrap; }
 .log-line.warning { color: var(--warn); }
 .log-line.error { color: var(--danger); }
+.shop button.suggest { margin-top: 6px; font-size: .85em; padding: 4px 10px; }

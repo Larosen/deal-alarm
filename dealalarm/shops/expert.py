@@ -257,7 +257,8 @@ def check(watch, settings, store_state, progress=None):
     log.info("expert · %s: %s, %d Artikelnummer(n) %s, %d Filialen",
              watch.get("name"), product["title"], len(webcodes), ", ".join(webcodes), len(stores))
     stores_state, stats = scan.run(stores, stores_state, fetch, budget=budget,
-                                   workers=int(settings.get("expert_workers") or 8), progress=progress)
+                                   workers=int(settings.get("expert_workers") or 8), progress=progress,
+                                   accept=lambda offer: bool(filter_offers([offer], watch, settings)))
 
     offers = filter_offers(scan.fresh_offers(stores_state, float(settings.get("price_max_age_hours") or 24)), watch, settings)
     best = offers[0] if offers else None

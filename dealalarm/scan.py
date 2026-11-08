@@ -56,10 +56,11 @@ def plan(stores, store_state, budget=None):
     return order[:budget] if budget else order
 
 
-def run(stores, store_state, fetch, budget=None, workers=1, progress=None):
+def run(stores, store_state, fetch, budget=None, workers=1, progress=None, accept=None):
     """Prüft die geplanten Filialen. `fetch(store)` liefert ein Angebot oder None (nicht verfügbar).
 
-    `progress(stats, store_state, best)` wird nach jeder Filiale aufgerufen.
+    `progress(stats, store_state, best)` wird nach jeder Filiale aufgerufen. `best` ist das
+    günstigste Angebot bisher, das `accept(offer)` erfüllt (z. B. die Filter des Geräts).
     Liefert (neuer store_state, Statistik).
     """
     store_state = {sid: entry for sid, entry in store_state.items() if sid in {s["id"] for s in stores}}
@@ -96,8 +97,9 @@ def run(stores, store_state, fetch, budget=None, workers=1, progress=None):
                 }
                 if offer:
                     stats["offers"] += 1
-                    if best is None or offer["total_price"] < best["total_price"]:
-                        best = {**offer, "store_name": store["name"]}
+                    candidate = {**offer, "store_name": store["name"], "coordinates": store.get("coordinates")}
+                    if (best is None or offer["total_price"] < best["total_price"]) and (accept is None or accept(candidate)):
+                        best = candidate
             if progress:
                 progress(stats, store_state, best)
     stats["total"] = len(stores)

@@ -301,24 +301,68 @@ def _first_product_link(page, base_url):
     return None
 
 
+class OtherProduct(LookupError):
+    """Die Suche lieferte ein Produkt mit anderer EAN – evtl. dasselbe Gerät als Händler-Variante."""
+
+    def __init__(self, message, url, title):
+        super().__init__(message)
+        self.suggestion = {"url": url, "title": title}
+
+
+def same_ean(a, b):
+    """EANs gleich? (führende Nullen werden ignoriert, EAN-13 vs. GTIN-14)"""
+    return bool(a and b) and a.lstrip("0") == b.lstrip("0")
+
+
+def _link_for_ean(page, base_url, ean):
+    """Produktlink in einer Ergebnisseite, dessen Pfad auf die gesuchte EAN endet."""
+    pattern = re.compile(r'href=["\']([^"\'#?]*-0*' + re.escape(ean.lstrip("0")) + r')/?(?:[?#][^"\']*)?["\']', re.I)
+    match = pattern.search(page)
+    return urljoin(base_url, html.unescape(match.group(1))) if match else None
+
+
 def _resolve_path(watch, settings, stores, store_state):
-    """Produktpfad aus der hinterlegten URL oder per EAN-Suche im Onlineshop."""
+    """Produktpfad aus der hinterlegten URL oder per EAN-Suche im Onlineshop.
+
+    Wird über die Suche zugeordnet, muss die EAN im gefundenen Produktpfad zur EAN des
+    Geräts passen – sonst würde ein ähnliches, aber anderes Gerät geprüft.
+    """
     query = (watch.get("euronics_query") or "").strip()
-    if "euronics.de" in query or "mediaathome.de" in query:
-        return product_path(query.split("#")[0].split("?")[0], stores)
     ean = (watch.get("ean") or "").strip()
+    if "euronics.de" in query or "mediaathome.de" in query:
+        path = product_path(query.split("#")[0].split("?")[0], stores)
+        found = ean_from_path(path)
+        if ean and found and not same_ean(found, ean):
+            log.info("Euronics-URL hat EAN %s, das Gerät EAN %s (Händler-Variante) – geprüft wird die eingetragene URL",
+                     found, ean)
+        return path
     term = query or ean
     if not term:
         raise ValueError("Keine Euronics-URL bzw. EAN hinterlegt")
     if store_state.get("_query") == term and store_state.get("_product_path"):
-        return store_state["_product_path"]
-    response = _get(f"{BASE}/search?sSearch={quote_plus(term)}", settings)
-    if parse_product_page(response.text, response.url):
-        return product_path(response.url.split("?")[0], stores)
-    link = _first_product_link(response.text, response.url)
-    if link:
-        return product_path(link, stores)
-    raise LookupError("Produkt bei Euronics nicht gefunden – bitte direkte Produkt-URL angeben")
+        path = store_state["_product_path"]
+    else:
+        response = _get(f"{BASE}/search?sSearch={quote_plus(term)}", settings)
+        path = None
+        if parse_product_page(response.text, response.url):
+            path = product_path(response.url.split("?")[0], stores)
+        elif ean:
+            link = _link_for_ean(response.text, response.url, ean)
+            path = product_path(link, stores) if link else None
+        if path is None:
+            link = _first_product_link(response.text, response.url)
+            path = product_path(link, stores) if link else None
+        if path is None:
+            raise LookupError(f"Bei Euronics nicht gefunden (Suche nach „{term}“ ohne Treffer) – "
+                              "falls vorhanden, Produkt-URL im Gerät eintragen")
+    if ean and not same_ean(ean_from_path(path), ean):
+        # Hersteller wie Samsung vergeben je Händler eigene Modellnummern und EANs (expert S94 = Euronics S93).
+        # Ob es dasselbe Gerät ist, entscheidet der Nutzer – automatisch geprüft wird nur bei gleicher EAN.
+        raise OtherProduct(
+            f"Euronics führt EAN {ean} nicht. Gefunden wurde „{title_from_path(path)}“ (EAN {ean_from_path(path) or '?'}) "
+            "– falls das dasselbe Gerät ist (Händler-Variante), als Euronics-Produkt übernehmen.",
+            f"{BASE}/{path}", title_from_path(path))
+    return path
 
 
 def to_offer(product):
