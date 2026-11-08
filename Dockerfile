@@ -1,4 +1,4 @@
-FROM python:3.12-slim
+FROM python:3.15-slim
 
 LABEL org.opencontainers.image.title="Deal-Alarm" \
       org.opencontainers.image.description="Dealalarm für expert & Euronics: Filialpreise prüfen, Benachrichtigung per ntfy" \
