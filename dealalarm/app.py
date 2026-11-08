@@ -54,7 +54,7 @@ def create_app(start_scheduler=True):
 
     @app.before_request
     def basic_auth():
-        if not UI_PASSWORD:
+        if not UI_PASSWORD or request.path == "/healthz":
             return None
         auth = request.authorization
         if auth and hmac.compare_digest(auth.username or "", UI_USER) and hmac.compare_digest(auth.password or "", UI_PASSWORD):
@@ -64,6 +64,10 @@ def create_app(start_scheduler=True):
     @app.errorhandler(ValueError)
     def bad_request(exc):
         return jsonify(error=str(exc)), 400
+
+    @app.get("/healthz")
+    def healthz():
+        return jsonify(ok=True)
 
     @app.get("/")
     def index():

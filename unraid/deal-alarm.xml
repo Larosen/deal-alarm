@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>deal-alarm</Name>
+  <Repository>ghcr.io/larosen/deal-alarm:latest</Repository>
+  <Registry>https://github.com/Larosen/deal-alarm/pkgs/container/deal-alarm</Registry>
+  <Network>bridge</Network>
+  <MyIP/>
+  <Shell>sh</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/Larosen/deal-alarm</Support>
+  <Project>https://github.com/Larosen/deal-alarm</Project>
+  <Overview>Dealalarm für expert und Euronics/media@home: prüft Geräte zyklisch (Standard alle 2 Stunden) in jeder Filiale einzeln und schickt per ntfy einen Dealalarm, sobald der Wunschpreis erreicht ist. Bedienung über die Weboberfläche, Einstellungen (ntfy-Topic, PLZ, Intervall) dort unter „Einstellungen“.</Overview>
+  <Category>Tools: Network:Other</Category>
+  <WebUI>http://[IP]:[PORT:8080]/</WebUI>
+  <TemplateURL/>
+  <Icon/>
+  <ExtraParams/>
+  <PostArgs/>
+  <CPUset/>
+  <DateInstalled/>
+  <DonateText/>
+  <DonateLink/>
+  <Requires/>
+  <Config Name="Weboberfläche" Target="8080" Default="8080" Mode="tcp" Description="Port der Weboberfläche" Type="Port" Display="always" Required="true" Mask="false">8080</Config>
+  <Config Name="Daten" Target="/data" Default="/mnt/user/appdata/deal-alarm" Mode="rw" Description="Watchlist, Einstellungen und Filialpreise (state.json)" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/deal-alarm</Config>
+  <Config Name="Zeitzone" Target="TZ" Default="Europe/Berlin" Mode="" Description="Zeitzone für Zeitplan und Logs" Type="Variable" Display="always" Required="false" Mask="false">Europe/Berlin</Config>
+  <Config Name="Passwort Weboberfläche" Target="UI_PASSWORD" Default="" Mode="" Description="Optional: schützt die Weboberfläche mit Benutzer/Passwort (leer = kein Schutz)" Type="Variable" Display="always" Required="false" Mask="true"/>
+  <Config Name="Benutzer Weboberfläche" Target="UI_USER" Default="admin" Mode="" Description="Benutzername für den Passwortschutz" Type="Variable" Display="advanced" Required="false" Mask="false">admin</Config>
+  <Config Name="Log-Level" Target="LOG_LEVEL" Default="INFO" Mode="" Description="DEBUG, INFO, WARNING oder ERROR" Type="Variable" Display="advanced" Required="false" Mask="false">INFO</Config>
+</Container>
