@@ -533,21 +533,26 @@ def test_euronics_rejects_other_product(monkeypatch):
         status_code = 200
     monkeypatch.setattr(euronics, "_get", lambda *a, **k: Page())
     monkeypatch.setattr(euronics, "_first_product_link", lambda page, url: "https://www.euronics.de/tv/gq65s93dat-4065327906011")
-    with pytest.raises(LookupError, match="anderes Produkt"):
+    with pytest.raises(euronics.OtherProduct, match="führt EAN 8806097999999 nicht") as exc:
         euronics._resolve_path({"ean": "8806097999999", "euronics_query": ""}, {}, [], {})
+    assert exc.value.suggestion["url"] == "https://www.euronics.de/tv/gq65s93dat-4065327906011"
     # auch ein zwischengespeicherter falscher Pfad wird verworfen
     cached = {"_query": "8806097999999", "_product_path": "tv/gq65s93dat-4065327906011"}
-    with pytest.raises(LookupError, match="anderes Produkt"):
+    with pytest.raises(euronics.OtherProduct):
         euronics._resolve_path({"ean": "8806097999999", "euronics_query": ""}, {}, [], cached)
+    # Händler-Variante: eine übernommene URL wird trotz anderer EAN geprüft
+    watch = {"ean": "8806097999999", "euronics_query": "https://www.euronics.de/tv/gq65s93dat-4065327906011"}
+    assert euronics._resolve_path(watch, {}, [], {}) == "tv/gq65s93dat-4065327906011"
 
 
 def test_lookup_error_clears_old_store_prices(tmp_path, monkeypatch):
     storage = _storage_tmp(tmp_path, monkeypatch)
     def not_found(watch, settings, state, progress=None):
-        raise LookupError("Bei Euronics nicht gefunden")
+        raise euronics.OtherProduct("Euronics führt EAN 1 nicht", "https://www.euronics.de/x-2", "X")
     monkeypatch.setattr(checker, "SHOPS", {"euronics": ("Euronics", not_found)})
     w = storage.add_watch({"name": "TV", "target_price": 1, "ean": "1"})
     storage.save_store_state(w["id"], "euronics", {"x": {"name": "alt", "checked": scan.now_iso(), "offer": _offer(1)}})
     checker.check_shop(storage.get_watch(w["id"]), "euronics", {})
     watch = storage.get_watch(w["id"])
-    assert watch["store_prices"]["euronics"] == {} and "nicht gefunden" in watch["results"]["euronics"]["error"]
+    assert watch["store_prices"]["euronics"] == {} and "führt EAN 1 nicht" in watch["results"]["euronics"]["error"]
+    assert watch["results"]["euronics"]["suggestion"]["url"] == "https://www.euronics.de/x-2"

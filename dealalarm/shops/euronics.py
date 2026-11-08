@@ -301,6 +301,14 @@ def _first_product_link(page, base_url):
     return None
 
 
+class OtherProduct(LookupError):
+    """Die Suche lieferte ein Produkt mit anderer EAN – evtl. dasselbe Gerät als Händler-Variante."""
+
+    def __init__(self, message, url, title):
+        super().__init__(message)
+        self.suggestion = {"url": url, "title": title}
+
+
 def same_ean(a, b):
     """EANs gleich? (führende Nullen werden ignoriert, EAN-13 vs. GTIN-14)"""
     return bool(a and b) and a.lstrip("0") == b.lstrip("0")
@@ -325,7 +333,8 @@ def _resolve_path(watch, settings, stores, store_state):
         path = product_path(query.split("#")[0].split("?")[0], stores)
         found = ean_from_path(path)
         if ean and found and not same_ean(found, ean):
-            log.warning("Euronics-URL hat EAN %s, das Gerät EAN %s – geprüft wird die eingetragene URL", found, ean)
+            log.info("Euronics-URL hat EAN %s, das Gerät EAN %s (Händler-Variante) – geprüft wird die eingetragene URL",
+                     found, ean)
         return path
     term = query or ean
     if not term:
@@ -347,9 +356,12 @@ def _resolve_path(watch, settings, stores, store_state):
             raise LookupError(f"Bei Euronics nicht gefunden (Suche nach „{term}“ ohne Treffer) – "
                               "falls vorhanden, Produkt-URL im Gerät eintragen")
     if ean and not same_ean(ean_from_path(path), ean):
-        raise LookupError(f"Bei Euronics nicht gefunden: Die Suche nach EAN {ean} lieferte ein anderes Produkt "
-                          f"({title_from_path(path)}, EAN {ean_from_path(path) or '?'}). Falls Euronics das Gerät "
-                          "führt, die Produkt-URL im Gerät eintragen.")
+        # Hersteller wie Samsung vergeben je Händler eigene Modellnummern und EANs (expert S94 = Euronics S93).
+        # Ob es dasselbe Gerät ist, entscheidet der Nutzer – automatisch geprüft wird nur bei gleicher EAN.
+        raise OtherProduct(
+            f"Euronics führt EAN {ean} nicht. Gefunden wurde „{title_from_path(path)}“ (EAN {ean_from_path(path) or '?'}) "
+            "– falls das dasselbe Gerät ist (Händler-Variante), als Euronics-Produkt übernehmen.",
+            f"{BASE}/{path}", title_from_path(path))
     return path
 
 

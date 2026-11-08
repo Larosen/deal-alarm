@@ -87,6 +87,8 @@ def check_shop(watch, shop, settings):
         # Produkt nicht (eindeutig) gefunden: alte Filialpreise gehören evtl. zu einem anderen Produkt
         log.warning("%s · %s: %s", shop_label, name, exc)
         result = {"error": str(exc), "price": None, "available": False}
+        if getattr(exc, "suggestion", None):
+            result["suggestion"] = exc.suggestion
         store_state = {}
     except Exception as exc:  # einzelne Shopfehler sollen den Lauf nicht abbrechen
         log.warning("%s · %s: Fehler – %s", shop_label, name, exc)

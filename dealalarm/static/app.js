@@ -115,6 +115,21 @@ function renderWatch(w) {
     }
     $(".price", el).textContent = price;
     $(".shop-detail", el).textContent = detail;
+    if (r && r.suggestion && !running) {
+      const btn = document.createElement("button");
+      btn.className = "suggest";
+      btn.textContent = `Als ${SHOP_LABELS[shop]}-Produkt übernehmen`;
+      btn.title = r.suggestion.url;
+      btn.addEventListener("click", async (ev) => {
+        ev.stopPropagation();
+        try {
+          await api("PUT", `/api/watches/${w.id}`, { [`${shop}_query`]: r.suggestion.url });
+          await api("POST", "/api/check", { watch_id: w.id });
+          await load();
+        } catch (e) { alert(e.message); }
+      });
+      el.append(btn);
+    }
     if (r && r.title) $(".shop-detail", el).title = r.title;
     if (r && r.scan) {
       const sc = r.scan;
