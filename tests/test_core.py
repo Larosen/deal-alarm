@@ -380,3 +380,11 @@ def test_expert_checks_all_listings_of_an_ean(monkeypatch):
     result, state = expert.check({"expert_query": "", "ean": product["ean"]}, {}, {})
     assert state["_webcodes"] == ["A", "B"]
     assert result["price"] == 229 and result["url"] == "https://e/B.html?branch_id=e_1"
+
+
+def test_healthz_is_reachable_with_password(tmp_path, monkeypatch):
+    from dealalarm import app as app_module
+    monkeypatch.setattr(app_module, "UI_PASSWORD", "geheim")
+    client = _client(tmp_path, monkeypatch)
+    assert client.get("/healthz").status_code == 200
+    assert client.get("/api/state").status_code == 401
