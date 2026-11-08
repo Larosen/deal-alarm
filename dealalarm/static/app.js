@@ -29,13 +29,21 @@ async function load() {
 function render() {
   const sch = state.scheduler;
   const status = $("#status");
-  if (sch.running) {
-    status.innerHTML = '<span class="dot"></span>Prüfung läuft …';
+  const names = Object.fromEntries(state.watches.map((w) => [w.id, w.name || "Gerät"]));
+  const busy = Object.values(state.activity || {}).filter((a) => a.current || a.queue.length);
+  if (busy.length) {
+    status.replaceChildren(Object.assign(document.createElement("span"), { className: "dot" }));
+    status.append(busy.map((a) => {
+      const p = a.progress || {};
+      let text = `${a.label}: `;
+      text += a.current ? `${names[a.current] || "…"} ${p.planned ? `${p.done}/${p.planned}` : "startet"}` : "wartet";
+      if (a.queue.length) text += ` (+${a.queue.length} in Warteschlange)`;
+      return text;
+    }).join(" · "));
   } else {
     const next = state.settings.scheduler_enabled ? `nächste: ${when(sch.next_run)}` : "Automatik aus";
     status.textContent = `Letzte Prüfung: ${when(sch.last_end)} · ${next}`;
   }
-  $("#btn-check-all").disabled = !!sch.running;
 
   const list = $("#watches");
   list.replaceChildren(...state.watches.map(renderWatch));
@@ -58,7 +66,20 @@ function renderWatch(w) {
     const el = document.createElement("div");
     el.className = "shop";
     let price = "–", detail = "Noch nicht geprüft";
-    if (r) {
+    const act = (state.activity || {})[shop];
+    const running = act && act.current === w.id;
+    const queuePos = act ? act.queue.indexOf(w.id) : -1;
+    if (running) {
+      const p = act.progress || {};
+      el.classList.add("running");
+      detail = p.planned ? `Prüfung läuft: ${p.done}/${p.planned} Filialen, ${p.offers || 0} mit Angebot` : "Prüfung startet …";
+      if (p.best_price != null) detail += ` · bisher günstigster ${euro(p.best_price)} (${p.best_store})`;
+      if (p.throttled) detail += " · gedrosselt";
+      if (r && !r.error && r.available) detail += ` · letzter Stand ${euro(r.price)}`;
+    } else if (queuePos >= 0) {
+      detail = `In Warteschlange (Platz ${queuePos + 1})`;
+      if (r && !r.error && r.available) { price = euro(r.price); detail += ` · letzter Stand vom ${when(r.checked_at)}`; }
+    } else if (r) {
       if (r.error) {
         el.classList.add("err");
         detail = r.error;
@@ -326,10 +347,40 @@ $("#btn-test-notify").addEventListener("click", async () => {
   out.textContent = "Speichere & sende …";
   try {
     await api("PUT", "/api/settings", readForm(settingsForm));
-    await api("POST", "/api/test-notify");
-    out.textContent = "Gesendet ✔";
+    const res = await api("POST", "/api/test-notify");
+    out.textContent = `Von ntfy angenommen ✔ (Nachricht ${res.id} an ${res.target})`;
   } catch (e) { out.textContent = `Fehler: ${e.message}`; }
 });
+
+// ---------- Protokoll ----------
+const logDialog = $("#log-dialog");
+let logAfter = 0, logTimer = null;
+
+async function loadLogs() {
+  try {
+    const lines = await api("GET", `/api/logs?after=${logAfter}`);
+    const box = $("#log-lines");
+    const atBottom = box.scrollTop + box.clientHeight >= box.scrollHeight - 20;
+    for (const line of lines) {
+      const row = document.createElement("div");
+      row.className = `log-line ${line.level.toLowerCase()}`;
+      const time = new Date(line.time).toLocaleTimeString("de-DE");
+      row.textContent = `${time}  ${line.message}`;
+      box.append(row);
+      logAfter = line.id;
+    }
+    if (lines.length && atBottom) box.scrollTop = box.scrollHeight;
+    if (!box.children.length) box.textContent = "Noch keine Einträge.";
+  } catch (e) { $("#log-lines").textContent = e.message; }
+  if (logDialog.open) logTimer = setTimeout(loadLogs, 3000);
+}
+$("#btn-log").addEventListener("click", () => {
+  $("#log-lines").replaceChildren();
+  logAfter = 0;
+  logDialog.showModal();
+  loadLogs();
+});
+logDialog.addEventListener("close", () => clearTimeout(logTimer));
 
 // ---------- Allgemein ----------
 document.querySelectorAll("[data-close]").forEach((b) => b.addEventListener("click", () => b.closest("dialog").close()));

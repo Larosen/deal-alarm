@@ -1,12 +1,15 @@
 """Preisabfrage bei expert – basierend auf expert-checker reborn (MyDealz @Barney & @Gorex)."""
 
 import json
+import logging
 import os
 import re
 import time
 
 from .. import ratelimit, scan
 from .common import haversine_km, http_session, plz_coordinates
+
+log = logging.getLogger(__name__)
 
 API = "https://production.brntgs.expert.de"
 ONLINE_STORE = "e_2879130"
@@ -201,7 +204,7 @@ def filter_offers(offers, watch, settings):
     return accepted
 
 
-def check(watch, settings, store_state):
+def check(watch, settings, store_state, progress=None):
     """Fragt jede Filiale einzeln ab und liefert (Ergebnis, neuer Filialstatus)."""
     query = (watch.get("expert_query") or "").strip()
     if query:
@@ -227,24 +230,34 @@ def check(watch, settings, store_state):
 
     def fetch(store):
         """Günstigstes Angebot der Filiale über alle Webcodes des Artikels."""
-        best = None
+        best, errors = None, []
         for webcode in webcodes:
             response = ratelimit.request(session, limiter, "GET", f"{API}/api/pricepds",
                                          params={"webcode": webcode, "storeId": store["exp_id"]})
             if response.status_code == 404:
                 continue
-            response.raise_for_status()
-            offer = parse_offer(response.json())
+            try:
+                response.raise_for_status()
+                data = response.json()
+            except Exception as exc:
+                # expert antwortet für einzelne Artikelnummern teils mit 500 – die übrigen zählen trotzdem
+                errors.append(exc)
+                continue
+            offer = parse_offer(data)
             if offer and (best is None or offer["total_price"] < best["total_price"]):
                 offer["webcode"] = webcode
                 offer["url"] = store_url(listings[webcode], store["id"])
                 best = offer
+        if errors and len(errors) == len(webcodes):
+            raise errors[-1]
         return best
 
     stores = list_stores(watch.get("expert_all_branches", True))
     budget = int(settings.get("expert_stores_per_cycle") or 0) or None
+    log.info("expert · %s: %s, %d Artikelnummer(n) %s, %d Filialen",
+             watch.get("name"), product["title"], len(webcodes), ", ".join(webcodes), len(stores))
     stores_state, stats = scan.run(stores, stores_state, fetch, budget=budget,
-                                   workers=int(settings.get("expert_workers") or 8))
+                                   workers=int(settings.get("expert_workers") or 8), progress=progress)
 
     offers = filter_offers(scan.fresh_offers(stores_state, float(settings.get("price_max_age_hours") or 24)), watch, settings)
     best = offers[0] if offers else None

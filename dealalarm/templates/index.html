@@ -12,6 +12,7 @@
   <div class="status" id="status">…</div>
   <div class="actions">
     <button id="btn-check-all" class="primary">Alle jetzt prüfen</button>
+    <button id="btn-log">Protokoll</button>
     <button id="btn-settings">Einstellungen</button>
   </div>
 </header>
@@ -88,7 +89,7 @@
         <label>Topic<input name="ntfy_topic" placeholder="mein-geheimes-dealalarm-topic" required></label>
       </div>
       <div class="row">
-        <label>Access-Token <span class="muted">(optional)</span><input name="ntfy_token" type="password" autocomplete="off"></label>
+        <label>Access-Token <span class="muted">(optional)</span><input name="ntfy_token" type="password" autocomplete="new-password"></label>
         <label>Priorität
           <select name="ntfy_priority">
             <option value="1">1 – min</option><option value="2">2 – niedrig</option><option value="3">3 – normal</option>
@@ -156,6 +157,16 @@
         <tbody id="stores-body"></tbody>
       </table>
     </div>
+    <div class="dialog-actions"><button type="button" data-close>Schließen</button></div>
+  </div>
+</dialog>
+
+<!-- Protokoll -->
+<dialog id="log-dialog" class="wide">
+  <div class="dialog-body">
+    <h2>Protokoll</h2>
+    <p class="hint">Was der Deal-Alarm gerade tut – aktualisiert sich alle 3 Sekunden. Dieselben Zeilen stehen im Docker-Log (Unraid: „Logs“).</p>
+    <div id="log-lines" class="log-box"></div>
     <div class="dialog-actions"><button type="button" data-close>Schließen</button></div>
   </div>
 </dialog>

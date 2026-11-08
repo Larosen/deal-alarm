@@ -154,6 +154,17 @@ def save_result(watch_id, shop, result, history_entry=None, store_state=None):
         return None
 
 
+def save_store_state(watch_id, shop, store_state):
+    """Zwischenstand eines laufenden Scans speichern (Filialpreise)."""
+    with _lock:
+        state = _load()
+        for watch in state["watches"]:
+            if watch["id"] == watch_id:
+                watch.setdefault("store_prices", {})[shop] = store_state
+                _save(state)
+                return
+
+
 def set_watch_field(watch_id, key, value):
     with _lock:
         state = _load()

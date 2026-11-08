@@ -388,3 +388,116 @@ def test_healthz_is_reachable_with_password(tmp_path, monkeypatch):
     client = _client(tmp_path, monkeypatch)
     assert client.get("/healthz").status_code == 200
     assert client.get("/api/state").status_code == 401
+
+
+def _storage_tmp(tmp_path, monkeypatch):
+    from dealalarm import storage
+    monkeypatch.setattr(storage, "DATA_DIR", str(tmp_path))
+    monkeypatch.setattr(storage, "DATA_FILE", str(tmp_path / "state.json"))
+    return storage
+
+
+def test_shops_run_independently(tmp_path, monkeypatch):
+    """expert wartet nicht auf den langsamen Euronics-Scan."""
+    import threading
+    import time
+    storage = _storage_tmp(tmp_path, monkeypatch)
+    release = threading.Event()
+
+    def fast(watch, settings, state, progress=None):
+        return {"price": 100.0, "available": True, "detail": "x"}, {}
+
+    def slow(watch, settings, state, progress=None):
+        release.wait(5)
+        return {"price": 90.0, "available": True, "detail": "y"}, {}
+
+    monkeypatch.setattr(checker, "SHOPS", {"expert": ("expert", fast), "euronics": ("Euronics", slow)})
+    monkeypatch.setattr(checker, "_workers", {})
+    a = storage.add_watch({"name": "A", "target_price": 50, "ean": "1"})
+    b = storage.add_watch({"name": "B", "target_price": 50, "ean": "2"})
+    assert checker.run_all()
+    deadline = time.time() + 5
+    while time.time() < deadline and not all("expert" in (storage.get_watch(w["id"]).get("results") or {}) for w in (a, b)):
+        time.sleep(0.05)
+    assert all("expert" in storage.get_watch(w["id"])["results"] for w in (a, b))
+    status = checker.status()
+    assert status["euronics"]["current"] == a["id"] and status["euronics"]["queue"] == [b["id"]]
+    assert checker.is_running()
+    # Ein einzeln angestoßenes Gerät rückt nach vorne
+    checker.run_all(b["id"])
+    assert checker.status()["euronics"]["queue"] == [b["id"]]
+    release.set()
+    deadline = time.time() + 5
+    while time.time() < deadline and checker.is_running():
+        time.sleep(0.05)
+    assert not checker.is_running()
+    assert storage.get_watch(b["id"])["results"]["euronics"]["price"] == 90.0
+
+
+def test_scan_reports_progress_and_logs(caplog):
+    import logging
+    from dealalarm import activity
+    reporter = activity.ScanReporter(logging.getLogger("dealalarm.test"), "expert", "expert", "TV", every=2)
+    with caplog.at_level(logging.INFO, logger="dealalarm"):
+        scan.run(_stores(5), {}, lambda s: _offer(100 + int(s["id"][1:])), progress=reporter)
+    lines = [r.getMessage() for r in caplog.records]
+    assert any("5/5 Filialen geprüft, 5 mit Angebot, bisher günstigster 100.00 € (Filiale 0)" in l for l in lines)
+    assert activity.progress()["expert"]["done"] == 5
+    activity.clear_progress("expert")
+
+
+class _NtfyResp:
+    def __init__(self, status=200, data=None, ctype="application/json"):
+        self.status_code = status
+        self._data = data
+        self.headers = {"Content-Type": ctype}
+    def raise_for_status(self):
+        if self.status_code >= 400:
+            raise RuntimeError(self.status_code)
+    def json(self):
+        if self._data is None:
+            raise ValueError("kein JSON")
+        return self._data
+
+
+def test_notifier_checks_for_real_ntfy_answer(monkeypatch):
+    from dealalarm import notifier
+    settings = {"ntfy_server": "https://ntfy.example", "ntfy_topic": "deal-alarm"}
+    monkeypatch.setattr(notifier.requests, "post", lambda *a, **k: _NtfyResp(data={"id": "abc", "topic": "deal-alarm"}))
+    assert notifier.send(settings, "t", "m") == "abc"
+    monkeypatch.setattr(notifier.requests, "post", lambda *a, **k: _NtfyResp(data=None, ctype="text/html"))
+    with pytest.raises(ValueError, match="keine ntfy-Antwort"):
+        notifier.send(settings, "t", "m")
+    monkeypatch.setattr(notifier.requests, "post", lambda *a, **k: _NtfyResp(status=403))
+    with pytest.raises(PermissionError, match="Access-Token"):
+        notifier.send(settings, "t", "m")
+
+
+def test_logs_endpoint_and_new_watch_is_queued(tmp_path, monkeypatch):
+    import logging
+    client = _client(tmp_path, monkeypatch)
+    queued = []
+    monkeypatch.setattr(checker, "run_all", lambda watch_id=None: queued.append(watch_id) or True)
+    res = client.post("/api/watches", json={"name": "TV", "target_price": 999, "ean": "1"})
+    assert queued == [res.json["id"]]
+    logging.getLogger("dealalarm.test").info("Hallo Protokoll")
+    lines = client.get("/api/logs").json
+    assert any(l["message"] == "Hallo Protokoll" for l in lines)
+    assert client.get("/api/logs", query_string={"after": lines[-1]["id"]}).json == []
+
+
+def test_expert_single_listing_error_does_not_drop_store(monkeypatch):
+    product = {"title": "AirPods Pro 3", "ean": "1", "webcode": "A", "url": "https://e/A.html"}
+    monkeypatch.setattr(expert, "find_by_ean", lambda ean: product)
+    monkeypatch.setattr(expert, "search", lambda term: [{**product, "webcode": "B", "url": "https://e/B.html"}])
+    monkeypatch.setattr(expert, "list_stores", lambda all_branches: [
+        {"id": "e_1", "exp_id": "1", "name": "Filiale 1", "coordinates": None}])
+
+    class Resp:
+        def __init__(self, webcode): self.webcode = webcode; self.status_code = 500 if webcode == "A" else 200
+        def raise_for_status(self):
+            if self.status_code >= 400: raise RuntimeError("500 Server Error")
+        def json(self): return {"price": {"bruttoPrice": 199, "onlineStock": 1}, "promotionPrice": {}}
+    monkeypatch.setattr(expert.ratelimit, "request", lambda s, l, m, u, params: Resp(params["webcode"]))
+    result, _ = expert.check({"expert_query": "", "ean": "1"}, {}, {})
+    assert result["price"] == 199 and result["scan"]["failed"] == 0

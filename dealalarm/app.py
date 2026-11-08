@@ -3,11 +3,10 @@
 import hmac
 import logging
 import os
-import threading
 
 from flask import Flask, Response, jsonify, render_template, request
 
-from . import checker, notifier, ratelimit, scan, storage
+from . import activity, checker, notifier, ratelimit, scan, storage
 from .shops import euronics, expert
 
 SHOP_MODULES = {"expert": expert, "euronics": euronics}
@@ -48,8 +47,10 @@ def _clean(values):
 
 def create_app(start_scheduler=True):
     app = Flask(__name__)
+    activity.install()
     scheduler = checker.Scheduler()
     if start_scheduler:
+        checker.workers()
         scheduler.start()
 
     @app.before_request
@@ -78,6 +79,7 @@ def create_app(start_scheduler=True):
         data = storage.get_state()
         data["settings"]["ntfy_token"] = "••••" if data["settings"].get("ntfy_token") else ""
         data["scheduler"]["running"] = checker.is_running()
+        data["activity"] = checker.status()
         data["limiters"] = ratelimit.snapshots()
         for watch in data["watches"]:
             # Filialpreise gibt es gesammelt über /api/watches/<id>/stores
@@ -137,7 +139,10 @@ def create_app(start_scheduler=True):
             raise ValueError("Bitte einen Artikel auswählen")
         if not values.get("target_price"):
             raise ValueError("Bitte einen Wunschpreis angeben")
-        return jsonify(storage.add_watch(values)), 201
+        watch = storage.add_watch(values)
+        if watch.get("enabled", True):
+            checker.run_all(watch["id"])  # neues Gerät sofort prüfen
+        return jsonify(watch), 201
 
     @app.put("/api/watches/<watch_id>")
     def edit_watch(watch_id):
@@ -153,20 +158,28 @@ def create_app(start_scheduler=True):
     @app.post("/api/check")
     def check_now():
         watch_id = (request.get_json(silent=True) or {}).get("watch_id")
-        if checker.is_running():
-            return jsonify(error="Es läuft bereits eine Prüfung"), 409
-        threading.Thread(target=checker.run_all, args=(watch_id,), daemon=True).start()
+        checker.run_all(watch_id)
         return jsonify(ok=True), 202
+
+    @app.get("/api/logs")
+    def logs():
+        return jsonify(activity.recent(after=int(request.args.get("after", 0) or 0)))
 
     @app.post("/api/test-notify")
     def test_notify():
-        notifier.send(
-            storage.get_settings(),
-            title="Deal-Alarm Test",
-            message="Wenn du das liest, funktionieren die Benachrichtigungen. 🎉",
-            tags=["white_check_mark"],
-        )
-        return jsonify(ok=True)
+        settings = storage.get_settings()
+        try:
+            message_id = notifier.send(
+                settings,
+                title="Deal-Alarm Test",
+                message="Wenn du das liest, funktionieren die Benachrichtigungen. 🎉",
+                tags=["white_check_mark"],
+            )
+        except Exception as exc:
+            log.warning("ntfy-Test fehlgeschlagen: %s", exc)
+            return jsonify(error=str(exc)), 502
+        return jsonify(ok=True, id=message_id,
+                       target=f"{(settings.get('ntfy_server') or 'https://ntfy.sh').rstrip('/')}/{settings['ntfy_topic']}")
 
     @app.post("/api/euronics/stores/preview")
     def euronics_store_preview():
