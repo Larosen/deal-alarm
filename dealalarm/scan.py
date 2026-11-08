@@ -56,14 +56,16 @@ def plan(stores, store_state, budget=None):
     return order[:budget] if budget else order
 
 
-def run(stores, store_state, fetch, budget=None, workers=1):
+def run(stores, store_state, fetch, budget=None, workers=1, progress=None):
     """Prüft die geplanten Filialen. `fetch(store)` liefert ein Angebot oder None (nicht verfügbar).
 
+    `progress(stats, store_state, best)` wird nach jeder Filiale aufgerufen.
     Liefert (neuer store_state, Statistik).
     """
     store_state = {sid: entry for sid, entry in store_state.items() if sid in {s["id"] for s in stores}}
     queue = plan(stores, store_state, budget)
-    stats = {"planned": len(queue), "checked": 0, "failed": 0, "aborted": False}
+    stats = {"planned": len(queue), "checked": 0, "failed": 0, "aborted": False, "offers": 0}
+    best = None
 
     def task(store):
         try:
@@ -71,24 +73,33 @@ def run(stores, store_state, fetch, budget=None, workers=1):
         except RateLimited as exc:
             return store, None, exc
         except Exception as exc:
-            log.debug("Filiale %s: %s", store["id"], exc)
             return store, None, exc
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=max(1, workers)) as pool:
         for store, offer, error in pool.map(task, queue):
             if isinstance(error, RateLimited):
+                if not stats["aborted"]:
+                    log.warning("Scan wird gedrosselt und abgebrochen: %s – Fortsetzung im nächsten Lauf", error)
                 stats["aborted"] = True
-                continue
-            if error is not None:
+            elif error is not None:
                 stats["failed"] += 1
-                continue
-            stats["checked"] += 1
-            store_state[store["id"]] = {
-                "name": store["name"],
-                "checked": now_iso(),
-                "coordinates": store.get("coordinates"),
-                "offer": offer,
-            }
+                # Die ersten Fehler sichtbar machen, danach nur noch zählen
+                if stats["failed"] <= 3:
+                    log.warning("%s: Abfrage fehlgeschlagen (%s)", store["name"], error)
+            else:
+                stats["checked"] += 1
+                store_state[store["id"]] = {
+                    "name": store["name"],
+                    "checked": now_iso(),
+                    "coordinates": store.get("coordinates"),
+                    "offer": offer,
+                }
+                if offer:
+                    stats["offers"] += 1
+                    if best is None or offer["total_price"] < best["total_price"]:
+                        best = {**offer, "store_name": store["name"]}
+            if progress:
+                progress(stats, store_state, best)
     stats["total"] = len(stores)
     stats["known"] = len(store_state)
     return store_state, stats

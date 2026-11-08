@@ -336,10 +336,12 @@ def to_offer(product):
     }
 
 
-def check(watch, settings, store_state):
+def check(watch, settings, store_state, progress=None):
     """Fragt Onlineshop und – falls gewünscht – jeden Markt einzeln ab."""
     markets = select_markets(watch, settings)
     path = _resolve_path(watch, settings, markets, store_state)
+    log.info("Euronics · %s: Produkt %s/%s, %d Märkte + Onlineshop, Tempo %s Anfragen/Min. je Domain",
+             watch.get("name"), BASE, path, len(markets), settings.get("euronics_rate_per_min") or 6)
     if store_state.get("_product_path") != path:
         store_state = {}
     stores = [{"id": ONLINE_STORE, "name": "Euronics Onlineshop", "base": BASE}] + markets
@@ -354,7 +356,15 @@ def check(watch, settings, store_state):
             return None  # Produkt nicht im Sortiment des Markts
         if store["id"] != ONLINE_STORE and f"/{store['slug']}/" not in urlsplit(response.url).path + "/":
             return None  # Weiterleitung weg vom Markt: nicht im Sortiment
-        offer = to_offer(parse_product_page(response.text, url))
+        product = parse_product_page(response.text, url)
+        if store["id"] == ONLINE_STORE:
+            if product is None:
+                log.warning("Euronics Onlineshop: Seite ohne lesbare Produktdaten (HTTP %s, %s) – "
+                            "Preise können so nicht gelesen werden", response.status_code, response.url)
+            else:
+                log.info("Euronics Onlineshop: %s – %s", product["title"] or "Produkt",
+                         f"{product['price']:.2f} €" if product["available"] and product["price"] else "nicht verfügbar")
+        offer = to_offer(product)
         if offer:
             offer["url"] = url
             if store.get("distance_km") is not None:
@@ -364,7 +374,7 @@ def check(watch, settings, store_state):
     budget = int(settings.get("euronics_stores_per_cycle") or 0) or None
     meta = {k: v for k, v in store_state.items() if k.startswith("_")}
     stores_state = {k: v for k, v in store_state.items() if not k.startswith("_")}
-    stores_state, stats = scan.run(stores, stores_state, fetch, budget=budget, workers=len(HOSTS))
+    stores_state, stats = scan.run(stores, stores_state, fetch, budget=budget, workers=len(HOSTS), progress=progress)
 
     offers = scan.fresh_offers(stores_state, float(settings.get("price_max_age_hours") or 24))
     best = offers[0] if offers else None

@@ -30,6 +30,10 @@ und durchsucht auf Wunsch alle expert-Filialen inkl. Direktabzug/Aktionspreis un
 - Kein Benachrichtigungs-Spam: Pro Gerät und Shop gibt es einen Alarm, wenn der Wunschpreis erreicht wird.
   Ein weiterer kommt erst, wenn der Preis nochmals fällt oder zwischenzeitlich wieder über dem Wunschpreis lag.
 - Optionaler Passwortschutz (HTTP Basic Auth) über `UI_PASSWORD`
+- **Protokoll und Fortschritt:** Jeder Shop hat eine eigene Warteschlange – expert wartet nicht auf den
+  langsamen Euronics-Scan, neue Geräte werden sofort geprüft. Karten und Statusleiste zeigen den Fortschritt
+  live („120/361 Filialen, bisher günstigster …“), das Protokoll (Button oben) zeigt, was gerade passiert,
+  inklusive Drosselungen, Fehlern und ntfy-Versand. Dieselben Zeilen stehen im Docker-Log.
 
 ## Filial-Scanner und Rate-Limit
 

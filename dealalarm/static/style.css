@@ -142,3 +142,8 @@ textarea { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-siz
 .hint code { font-size: .95em; }
 .hint a { color: inherit; }
 fieldset.article { border-color: var(--accent); }
+.shop.running { border-color: var(--accent); border-style: dashed; }
+.log-box { height: 60vh; overflow: auto; border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px;
+  font: .8em/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--bg); white-space: pre-wrap; }
+.log-line.warning { color: var(--warn); }
+.log-line.error { color: var(--danger); }
