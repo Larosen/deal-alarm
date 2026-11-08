@@ -60,6 +60,27 @@ docker compose up -d --build
 Danach <http://localhost:8080> öffnen, unter **Einstellungen** das ntfy-Topic eintragen,
 „Testnachricht senden“ klicken und Geräte hinzufügen. Die Daten liegen in `./data/state.json`.
 
+## Start auf Unraid
+
+Das Image wird bei jedem Push auf `main` von GitHub Actions gebaut und als
+`ghcr.io/larosen/deal-alarm:latest` veröffentlicht. Da das Repository privat ist, muss Unraid
+einmal bei der GitHub Container Registry angemeldet sein (Terminal, Token mit `read:packages`):
+
+```bash
+docker login ghcr.io -u <github-benutzer>
+```
+
+Template einrichten:
+
+1. Unraid-Terminal öffnen und den Inhalt von [`unraid/deal-alarm.xml`](unraid/deal-alarm.xml) speichern als
+   `/boot/config/plugins/dockerMan/templates-user/my-deal-alarm.xml`.
+2. **Docker → Add Container → Template:** „deal-alarm“ auswählen.
+3. Port (Standard 8080), Datenpfad (Standard `/mnt/user/appdata/deal-alarm`) und optional ein Passwort
+   prüfen, dann **Apply**.
+4. Über **WebUI** öffnen und unter **Einstellungen** ntfy-Topic und PLZ eintragen.
+
+Updates: In der Docker-Übersicht „Check for Updates“ – Unraid zieht dann das neue `latest`-Image.
+
 ## Start ohne Docker
 
 ```bash
