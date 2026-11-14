@@ -1,8 +1,9 @@
-# 🔔 Deal-Alarm – expert & Euronics
+# 🔔 Deal-Alarm – expert, Euronics & Amazon
 
-Überwacht Geräte zyklisch (standardmäßig etwa alle 2 Stunden) bei **expert** und **Euronics**
-und schickt per [ntfy](https://ntfy.sh) einen **Dealalarm**, sobald ein Gerät zum vorher festgelegten
-Wunschpreis (oder günstiger) zu haben ist. Bedient wird alles über eine Weboberfläche.
+Überwacht Geräte zyklisch (standardmäßig etwa alle 2 Stunden) bei **expert**, **Euronics/media@home**
+und **Amazon** (inkl. **Amazon Warehouse**) und schickt per [ntfy](https://ntfy.sh) einen **Dealalarm**, sobald ein Gerät zum vorher festgelegten
+Wunschpreis (oder günstiger) zu haben ist. Bedient wird alles über eine Weboberfläche. Das Programm ist in Rust geschrieben und ein einzelnes,
+kleines Binary (die Weboberfläche und die Händlerlisten sind eingebettet).
 
 Die expert-Abfrage basiert auf dem
 [expert-checker reborn](https://github.com/DJGorex/expert-checker) (Credits: MyDealz @Barney & @Gorex)
@@ -10,8 +11,8 @@ und durchsucht auf Wunsch alle expert-Filialen inkl. Direktabzug/Aktionspreis un
 
 ## Funktionen
 
-- **Ein Artikel, beide Shops:** Suchbegriff, EAN oder eine Produkt-URL von expert, Euronics oder media@home
-  eingeben – der Deal-Alarm ordnet den Artikel über die EAN automatisch beiden Shops zu und prüft sie zusammen
+- **Ein Artikel, alle Shops:** Suchbegriff, EAN oder eine Produkt-URL von expert, Euronics, media@home oder Amazon
+  eingeben – der Deal-Alarm ordnet den Artikel über die EAN automatisch den Shops zu und prüft sie zusammen
 - Watchlist mit Wunschpreis pro Gerät, pausierbar, „Jetzt prüfen“ pro Gerät oder für alle
 - **expert**: Produkt-URL, Webcode oder Suchbegriff (mit Suchauswahl in der Oberfläche)
   - **jede Filiale wird einzeln abgefragt** – jede Niederlassung hat ihre eigenen Preise
@@ -25,6 +26,11 @@ und durchsucht auf Wunsch alle expert-Filialen inkl. Direktabzug/Aktionspreis un
     wöchentlich aktualisiert; optional nur Märkte im Umkreis deiner PLZ
   - eigene Märkte zusätzlich eintragbar, z. B. `https://www.euronics.de/hamburg-buddenhagen`
   - eigenes Rate-Limit pro Domain (euronics.de und mediaathome.de)
+- **Amazon** (amazon.de): ASIN, Produkt-URL oder Suche über die EAN
+  - **Amazon Warehouse** (Gebrauchtware) mit Mindestzustand (*Wie neu*, *Sehr gut*, *Gut*, *Akzeptabel*)
+  - Neuware von Amazon, optional auch von Drittanbietern
+  - Tabelle „Alle Angebote“ mit dem günstigsten Angebot je Zustand und Verkäufer
+  - nur **eine** Anfrage pro Prüfung, bewusst niedriges Tempo (Amazon blockt schnell, siehe Hinweise)
 - Zeitplan mit einstellbarem Intervall (Standard 120 Min.) und Zufallsabweichung (Standard ± 10 Min.)
 - ntfy mit eigenem Server, Topic, optionalem Access-Token und Priorität; Testnachricht-Button
 - Kein Benachrichtigungs-Spam: Pro Gerät und Shop gibt es einen Alarm, wenn der Wunschpreis erreicht wird.
@@ -87,10 +93,10 @@ Updates: In der Docker-Übersicht „Check for Updates“ – Unraid zieht dann 
 
 ## Start ohne Docker
 
+Mit [Rust](https://rustup.rs) (aktuelle stabile Version):
+
 ```bash
-python3 -m venv .venv
-.venv/bin/pip install -r requirements.txt
-.venv/bin/python -m dealalarm.app
+cargo run --release
 ```
 
 | Umgebungsvariable | Standard | Bedeutung |
@@ -99,7 +105,7 @@ python3 -m venv .venv
 | `HOST` | `0.0.0.0` | Bind-Adresse |
 | `DATA_DIR` | `./data` | Ablage für Einstellungen, Watchlist und Ergebnisse |
 | `UI_PASSWORD` | – | Aktiviert Basic Auth (Benutzer `UI_USER`, Standard `admin`) |
-| `LOG_LEVEL` | `INFO` | Log-Level |
+| `LOG_LEVEL` | `INFO` | Log-Level (`DEBUG`, `INFO`, `WARNING`, `ERROR`) |
 
 ## ntfy einrichten
 
@@ -131,12 +137,44 @@ Der Dealalarm enthält Gerät, Preis, Wunschpreis und Filiale. Ein Tipp auf die 
   „Märkte pro Zyklus“ setzen – dann rotiert der Scan über mehrere Zyklen durch alle Märkte.
 - Die Euronics-Suche über die EAN (wenn keine Euronics-URL hinterlegt ist) nutzt `euronics.de/search?sSearch=<EAN>`.
   Findet sie nichts, bitte einmal die Euronics-Produkt-URL einfügen.
+- **Amazon** hat keine öffentliche Preis-API. Der Deal-Alarm ruft die „Alle Angebote“-Liste eines Artikels wie ein
+  Browser ab und liest sie aus. Das ist anfällig: Amazon zeigt bei Automaten gern eine Captcha-Seite (wird wie eine
+  Drosselung behandelt, der Scan pausiert und versucht es später erneut), und ändert sich der Seitenaufbau, muss die
+  Auswertung in `src/shops/amazon.rs` nachgezogen werden. Rechenzentrums-IPs werden oft gesperrt – auch Amazon
+  sollte zuhause laufen. Das Tempo (Standard 4 Anfragen/Minute) bitte nicht erhöhen.
+- **Amazon Warehouse:** Als Warehouse gelten Angebote der Verkäufer „Amazon Warehouse“ bzw. „Amazon Resale“. Gebrauchtware
+  anderer Händler wird bewusst ignoriert. Einen Artikel ohne Amazon-URL findet der Deal-Alarm über die Amazon-Suche nach der EAN;
+  ist das Ergebnis falsch, einfach die Amazon-URL oder ASIN im Gerät eintragen.
 - Eine Prüfung über alle expert-Filialen dauert ca. eine Minute pro Artikelnummer. Bitte das Intervall nicht zu
   klein wählen (Minimum 15 Minuten), damit die Shops nicht unnötig belastet werden.
 
 ## Entwicklung
 
 ```bash
-.venv/bin/pip install -r requirements-dev.txt
-.venv/bin/python -m pytest
+cargo test
 ```
+
+Die Quellen liegen in `src/shops/`, die Weboberfläche in `assets/`. Ein bestehender `state.json` aus der
+Python-Version wird beim ersten Start automatisch ins neue Format übernommen (Geräte, Preise, Verlauf und
+Einstellungen bleiben erhalten; Amazon ist dort zunächst aus und lässt sich pro Gerät aktivieren).
+
+### Weitere Quellen hinzufügen
+
+Alle Quellen (expert, Euronics, Amazon) hängen am Trait `Source` in `src/shops/mod.rs`. Warteschlange je Shop,
+Zeitplan, Alarm-Logik, Speicherung, API und der Dialog „Gerät hinzufügen“ arbeiten generisch darüber – für eine neue
+Quelle (z. B. Idealo, MediaMarkt, Otto) genügt:
+
+1. `src/shops/<name>.rs` anlegen und `Source` implementieren:
+   - `id`, `label`, `query_label`, `query_placeholder` – Kennung und Beschriftung,
+   - `options()` – Formularfelder pro Gerät (Schalter, Zahl, Auswahl); die Oberfläche baut daraus den Dialog,
+   - `check()` – ein Gerät prüfen. Liefert `ShopResult` (günstigster Preis, Link, Detailtext) und einen
+     `StoreState` mit einem Eintrag je Filiale/Angebotsart für die Tabelle „Alle Filialpreise“.
+     Für viele Filialen gibt es den Scanner `scan::run` (Budget, Rotation, Drosselung), für wenige Angebote genügt
+     es, die Einträge direkt zu schreiben (siehe Amazon),
+   - optional `filter_offers()` (Filter des Geräts), `matches_input()`/`identify()` (URL oder ID einer Quelle erkennen),
+     `lookup_ean()`/`search()` (Artikel automatisch zuordnen bzw. Freitextsuche).
+2. Die Quelle in `shops::all()` eintragen.
+3. Für den Abfragetakt `ratelimit::get_limiter` verwenden (adaptiv, pro Domain) und bei Bedarf eine Einstellung wie
+   `amazon_rate_per_min` in `storage::Settings` sowie im Einstellungsdialog (`assets/index.html`) ergänzen.
+
+Pro Gerät wird alles unter `sources.<id>` gespeichert (`enabled`, `query`, `options`), Ergebnisse unter `results.<id>`.

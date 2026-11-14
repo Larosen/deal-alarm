@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Deal-Alarm</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
 <header class="topbar">
-  <div class="brand">🔔 Deal-Alarm <span class="muted">expert &amp; Euronics</span></div>
+  <div class="brand">🔔 Deal-Alarm <span class="muted" id="brand-sources">expert, Euronics &amp; Amazon</span></div>
   <div class="status" id="status">…</div>
   <div class="actions">
     <button id="btn-check-all" class="primary">Alle jetzt prüfen</button>
@@ -33,7 +33,7 @@
     <input type="hidden" name="id">
     <fieldset class="article">
       <legend>Artikel</legend>
-      <label>Suchbegriff, EAN oder Produkt-URL von expert, Euronics oder media@home
+      <label>Suchbegriff, EAN oder Produkt-URL von expert, Euronics, media@home oder Amazon
         <div class="search-row">
           <input id="article-query" placeholder="z. B. AirPods Pro 3 – oder eine Produkt-URL einfügen">
           <button type="button" id="btn-article-search" class="primary">Suchen</button>
@@ -46,28 +46,11 @@
         <label>EAN<input name="ean" inputmode="numeric" placeholder="0195950543742"></label>
         <label>Wunschpreis (€)<input name="target_price" inputmode="decimal" placeholder="199,00" required></label>
       </div>
-      <p class="hint">Der Artikel wird bei beiden Shops zusammen geprüft. Fehlt unten eine Produkt-URL, sucht der Deal-Alarm den Artikel dort über die EAN.</p>
+      <p class="hint">Der Artikel wird bei allen angehakten Shops zusammen geprüft. Fehlt unten eine Produkt-URL, sucht der Deal-Alarm den Artikel dort über die EAN.</p>
     </fieldset>
 
-    <fieldset>
-      <legend><label class="inline"><input type="checkbox" name="expert_enabled" checked> expert</label></legend>
-      <label>Produkt-URL oder Webcode <span class="muted">(leer = automatisch über EAN)</span>
-        <input name="expert_query" placeholder="https://www.expert.de/shop/unsere-produkte/…html">
-      </label>
-      <label class="inline"><input type="checkbox" name="expert_all_branches" checked> Alle Filialen durchsuchen (versandfähige Angebote)</label>
-      <label class="inline"><input type="checkbox" name="expert_include_display"> Ausstellungsstücke berücksichtigen</label>
-      <label class="inline"><input type="checkbox" name="expert_include_local"> Auch nur lokal verfügbare Angebote</label>
-      <label class="narrow">Max. Entfernung (km, PLZ in den Einstellungen)<input name="expert_max_distance" inputmode="numeric" value="50"></label>
-    </fieldset>
-
-    <fieldset>
-      <legend><label class="inline"><input type="checkbox" name="euronics_enabled" checked> Euronics</label></legend>
-      <label>Produkt-URL <span class="muted">(Onlineshop- oder Markt-URL, leer = automatisch über EAN)</span>
-        <input name="euronics_query" placeholder="https://www.euronics.de/…">
-      </label>
-      <label class="inline"><input type="checkbox" name="euronics_all_stores" checked> Alle Märkte einzeln durchsuchen (nicht nur den Onlineshop)</label>
-      <label class="narrow">Umkreis um deine PLZ (km, 0 = ganz Deutschland)<input name="euronics_max_distance" inputmode="numeric" value="0"></label>
-    </fieldset>
+    <!-- Felder je Quelle: werden aus /api/sources erzeugt -->
+    <div id="source-fields"></div>
 
     <label class="inline"><input type="checkbox" name="enabled" checked> Überwachung aktiv</label>
     <p id="watch-error" class="error"></p>
@@ -122,7 +105,10 @@
         <label>expert: Filialen pro Zyklus <span class="muted">(0 = alle)</span><input name="expert_stores_per_cycle" inputmode="numeric"></label>
         <label>Euronics: max. Anfragen/Minute<input name="euronics_rate_per_min" inputmode="numeric"></label>
       </div>
-      <label class="narrow">Euronics: Märkte pro Zyklus <span class="muted">(0 = alle)</span><input name="euronics_stores_per_cycle" inputmode="numeric"></label>
+      <div class="row">
+        <label>Euronics: Märkte pro Zyklus <span class="muted">(0 = alle)</span><input name="euronics_stores_per_cycle" inputmode="numeric"></label>
+        <label>Amazon: max. Anfragen/Minute <span class="muted">(niedrig halten, Amazon blockt schnell)</span><input name="amazon_rate_per_min" inputmode="numeric"></label>
+      </div>
       <label class="narrow">Filialpreise gelten max. (Stunden)<input name="price_max_age_hours" inputmode="numeric"></label>
       <div id="limiter-info" class="muted small"></div>
     </fieldset>
@@ -153,7 +139,7 @@
     <label class="inline small"><input type="checkbox" id="stores-only-match" checked> Nur Angebote, die zu den Filtern passen</label>
     <div class="table-wrap">
       <table class="stores">
-        <thead><tr><th>#</th><th>Filiale</th><th class="num">Preis</th><th class="num">Versand</th><th class="num">Gesamt</th><th>Bestand</th><th>geprüft</th></tr></thead>
+        <thead><tr><th>#</th><th id="stores-head-name">Filiale</th><th class="num">Preis</th><th class="num">Versand</th><th class="num">Gesamt</th><th>Bestand</th><th>geprüft</th></tr></thead>
         <tbody id="stores-body"></tbody>
       </table>
     </div>
@@ -190,6 +176,6 @@
   </article>
 </template>
 
-<script src="{{ url_for('static', filename='app.js') }}"></script>
+<script src="/static/app.js"></script>
 </body>
 </html>

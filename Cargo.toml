@@ -1,0 +1,33 @@
+[package]
+name = "deal-alarm"
+version = "0.2.0"
+edition = "2021"
+description = "Dealalarm für expert, Euronics/media@home und Amazon: Preise prüfen, Benachrichtigung per ntfy"
+license = "MIT"
+default-run = "deal-alarm"
+
+[dependencies]
+axum = "0.8"
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "time", "sync", "net", "signal"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls", "gzip", "cookies"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+regex = "1"
+chrono = { version = "0.4", default-features = false, features = ["clock", "std", "serde"] }
+rand = "0.8"
+async-trait = "0.1"
+futures = "0.3"
+base64 = "0.22"
+scraper = "0.20"
+uuid = { version = "1", features = ["v4"] }
+urlencoding = "2"
+html-escape = "0.2"
+
+[dev-dependencies]
+tower = { version = "0.5", features = ["util"] }
+http-body-util = "0.1"
+tempfile = "3"
+
+[profile.release]
+lto = "thin"
+strip = true

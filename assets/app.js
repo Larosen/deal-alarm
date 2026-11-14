@@ -1,7 +1,8 @@
 "use strict";
 
 const $ = (sel, root = document) => root.querySelector(sel);
-const SHOP_LABELS = { expert: "expert", euronics: "Euronics" };
+let SOURCES = [];           // aus /api/sources: Quellen mit ihren Optionen
+const SHOP_LABELS = {};
 let state = null;
 let pollTimer = null;
 
@@ -20,6 +21,12 @@ async function api(method, url, body) {
 }
 
 async function load() {
+  if (!SOURCES.length) {
+    SOURCES = await api("GET", "/api/sources");
+    for (const s of SOURCES) SHOP_LABELS[s.id] = s.label;
+    $("#brand-sources").textContent = SOURCES.map((s) => s.label).join(", ");
+    buildSourceFields();
+  }
   state = await api("GET", "/api/state");
   render();
   clearTimeout(pollTimer);
@@ -59,8 +66,9 @@ function renderWatch(w) {
 
   const shops = $(".shops", card);
   let anyDeal = false;
-  for (const shop of ["expert", "euronics"]) {
-    const active = w[`${shop}_enabled`] && (w[`${shop}_query`] || w.ean);
+  for (const { id: shop } of SOURCES) {
+    const cfg = (w.sources || {})[shop] || {};
+    const active = cfg.enabled && (cfg.query || w.ean);
     if (!active) continue;
     const r = (w.results || {})[shop];
     const el = document.createElement("div");
@@ -123,7 +131,7 @@ function renderWatch(w) {
       btn.addEventListener("click", async (ev) => {
         ev.stopPropagation();
         try {
-          await api("PUT", `/api/watches/${w.id}`, { [`${shop}_query`]: r.suggestion.url });
+          await api("PUT", `/api/watches/${w.id}`, { sources: { [shop]: { query: r.suggestion.url } } });
           await api("POST", "/api/check", { watch_id: w.id });
           await load();
         } catch (e) { alert(e.message); }
@@ -135,11 +143,11 @@ function renderWatch(w) {
       const sc = r.scan;
       const scanEl = $(".shop-scan", el);
       const info = document.createElement("span");
-      info.textContent = `Filialen: ${sc.checked}/${sc.planned} in diesem Lauf · ${sc.known}/${sc.total} bekannt`
+      info.textContent = `${shop === "amazon" ? "Angebotsarten" : "Filialen"}: ${sc.checked}/${sc.planned} in diesem Lauf · ${sc.known}/${sc.total} bekannt`
         + (sc.aborted ? " · gedrosselt, Fortsetzung im nächsten Lauf" : "");
       const btn = document.createElement("button");
       btn.className = "linklike";
-      btn.textContent = "Alle Filialpreise";
+      btn.textContent = shop === "amazon" ? "Alle Angebote" : "Alle Filialpreise";
       btn.addEventListener("click", () => openStores(w, shop));
       scanEl.append(info, btn);
     }
@@ -167,7 +175,9 @@ const storesDialog = $("#stores-dialog");
 let storesData = null;
 
 async function openStores(w, shop) {
-  $("#stores-title").textContent = `${w.name} – ${SHOP_LABELS[shop]}: Preise aller Filialen`;
+  const amazon = shop === "amazon";
+  $("#stores-title").textContent = `${w.name} – ${SHOP_LABELS[shop]}: ${amazon ? "alle Angebote" : "Preise aller Filialen"}`;
+  $("#stores-head-name").textContent = amazon ? "Angebot" : "Filiale";
   $("#stores-body").innerHTML = '<tr><td colspan="7">Lade …</td></tr>';
   storesDialog.showModal();
   try {
@@ -181,7 +191,7 @@ function renderStores() {
   const rows = storesData.stores.filter((r) => !onlyMatch || r.matches_filter);
   const prices = storesData.stores.map((r) => r.total_price);
   const min = prices.length ? Math.min(...prices) : null, max = prices.length ? Math.max(...prices) : null;
-  $("#stores-summary").textContent = `${storesData.stores.length} Filialen mit Angebot (Spanne ${euro(min)} – ${euro(max)}), `
+  $("#stores-summary").textContent = `${storesData.stores.length} ${storesData.label === "Amazon" ? "Angebotsarten" : "Filialen"} mit Angebot (Spanne ${euro(min)} – ${euro(max)}), `
     + `${storesData.unavailable} ohne Angebot · Wunschpreis ${euro(storesData.target_price)}`;
   const body = $("#stores-body");
   body.replaceChildren();
@@ -233,18 +243,84 @@ function readForm(form) {
 // ---------- Gerät-Dialog ----------
 const watchDialog = $("#watch-dialog");
 const watchForm = $("#watch-form");
-const WATCH_DEFAULTS = {
-  id: "", name: "", target_price: "", enabled: true,
-  expert_enabled: true, expert_query: "", expert_all_branches: true, expert_include_display: false,
-  expert_include_local: false, expert_max_distance: 50,
-  euronics_enabled: true, euronics_query: "", euronics_all_stores: true, euronics_max_distance: 0, ean: "",
-};
+const WATCH_DEFAULTS = { id: "", name: "", target_price: "", enabled: true, ean: "" };
+
+// Pro Quelle ein Feldblock: aktiv, Produkt-Angabe und die Optionen der Quelle (aus /api/sources)
+function buildSourceFields() {
+  const host = $("#source-fields");
+  host.replaceChildren();
+  for (const src of SOURCES) {
+    const set = document.createElement("fieldset");
+    set.dataset.source = src.id;
+    const legend = document.createElement("legend");
+    legend.innerHTML = '<label class="inline"><input type="checkbox" data-field="enabled"> <span></span></label>';
+    $("span", legend).textContent = src.label;
+    set.append(legend);
+    const q = document.createElement("label");
+    q.append(src.query_label + " ");
+    const input = Object.assign(document.createElement("input"), { placeholder: src.query_placeholder });
+    input.dataset.field = "query";
+    q.append(input);
+    set.append(q);
+    for (const opt of src.options) {
+      const label = document.createElement("label");
+      let el;
+      if (opt.kind === "bool") {
+        label.className = "inline";
+        el = Object.assign(document.createElement("input"), { type: "checkbox" });
+        label.append(el, " " + opt.label);
+      } else if (opt.kind === "select") {
+        label.className = "narrow";
+        el = document.createElement("select");
+        for (const [value, text] of opt.choices) el.append(new Option(text, value));
+        label.append(opt.label, el);
+      } else {
+        label.className = "narrow";
+        el = Object.assign(document.createElement("input"), { inputMode: "numeric" });
+        label.append(opt.label, el);
+      }
+      el.dataset.option = opt.key;
+      set.append(label);
+    }
+    host.append(set);
+  }
+}
+
+function fillSourceFields(w) {
+  for (const src of SOURCES) {
+    const set = $(`fieldset[data-source="${src.id}"]`);
+    const cfg = (w && w.sources && w.sources[src.id]) || null;
+    // Neue Geräte: Standard der Quelle; vorhandene ohne Eintrag: aus
+    $('[data-field="enabled"]', set).checked = cfg ? !!cfg.enabled : (w ? false : src.default_enabled);
+    $('[data-field="query"]', set).value = cfg ? cfg.query || "" : "";
+    for (const opt of src.options) {
+      const el = $(`[data-option="${opt.key}"]`, set);
+      const value = cfg && cfg.options && opt.key in cfg.options ? cfg.options[opt.key] : opt.default;
+      if (opt.kind === "bool") el.checked = !!value; else el.value = value;
+    }
+  }
+}
+
+function readSourceFields() {
+  const out = {};
+  for (const src of SOURCES) {
+    const set = $(`fieldset[data-source="${src.id}"]`);
+    const options = {};
+    for (const opt of src.options) {
+      const el = $(`[data-option="${opt.key}"]`, set);
+      options[opt.key] = opt.kind === "bool" ? el.checked : el.value;
+    }
+    out[src.id] = { enabled: $('[data-field="enabled"]', set).checked, query: $('[data-field="query"]', set).value, options };
+  }
+  return out;
+}
 
 function openWatchDialog(w) {
   watchForm.reset();
   const values = { ...WATCH_DEFAULTS, ...(w || {}) };
   if (w) values.target_price = String(w.target_price).replace(".", ",");
   fillForm(watchForm, values);
+  fillSourceFields(w);
   $("#watch-dialog-title").textContent = w ? "Gerät bearbeiten" : "Gerät hinzufügen";
   $("#watch-error").textContent = "";
   $("#article-results").classList.add("hidden");
@@ -255,7 +331,7 @@ function openWatchDialog(w) {
 
 watchForm.addEventListener("submit", async (ev) => {
   ev.preventDefault();
-  const values = readForm(watchForm);
+  const values = { ...readForm(watchForm), sources: readSourceFields() };
   const id = values.id;
   delete values.id;
   try {
@@ -266,18 +342,21 @@ watchForm.addEventListener("submit", async (ev) => {
   } catch (e) { $("#watch-error").textContent = e.message; }
 });
 
-// Ein Artikel für beide Shops: Auswahl füllt Name, EAN und die Angaben für expert und Euronics
+// Ein Artikel für alle Shops: Auswahl füllt Name, EAN und die Produkt-Angaben der Quellen
 function applyArticle(article) {
   const f = watchForm.elements;
   if (article.title) f.name.value = article.title;
   f.ean.value = article.ean || "";
-  f.expert_query.value = article.expert_query || "";
-  f.euronics_query.value = article.euronics_query || "";
-  f.expert_enabled.checked = true;
-  f.euronics_enabled.checked = true;
   const status = [];
-  status.push(article.expert_found ? "expert: gefunden ✔" : "expert: nicht im Sortiment – wird trotzdem regelmäßig über die EAN gesucht");
-  status.push(article.euronics_query ? "Euronics: URL übernommen ✔" : "Euronics: wird über die EAN gesucht");
+  for (const src of SOURCES) {
+    const set = $(`fieldset[data-source="${src.id}"]`);
+    const query = (article.queries || {})[src.id] || "";
+    const found = (article.found || {})[src.id];
+    $('[data-field="query"]', set).value = query;
+    if (query) $('[data-field="enabled"]', set).checked = true;
+    if (found) status.push(`${src.label}: gefunden ✔`);
+    else if (article.ean && $('[data-field="enabled"]', set).checked) status.push(`${src.label}: wird über die EAN gesucht`);
+  }
   $("#article-status").textContent = status.join(" · ");
   $("#article-results").classList.add("hidden");
 }
@@ -295,13 +374,14 @@ async function searchArticle() {
     list.replaceChildren();
     list.classList.remove("hidden");
     if (!res.results.length) {
-      list.innerHTML = "<li>Keine Treffer bei expert – füge eine Euronics-URL oder die EAN ein</li>";
+      list.innerHTML = "<li>Keine Treffer – füge eine Shop-URL oder die EAN ein</li>";
       return;
     }
     for (const hit of res.results) {
       const li = document.createElement("li");
       li.textContent = `${hit.title}${hit.ean ? ` · EAN ${hit.ean}` : ""}`;
-      li.addEventListener("click", () => applyArticle({ ...hit, euronics_query: "", expert_found: true }));
+      li.addEventListener("click", () => applyArticle({ title: hit.title, ean: hit.ean,
+        queries: { [hit.source]: hit.query }, found: { [hit.source]: true } }));
       list.append(li);
     }
   } catch (e) { $("#article-status").textContent = e.message; }
