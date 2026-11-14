@@ -1,5 +1,4 @@
-.venv
 .git
 data
-tests
-__pycache__
+target
+.github

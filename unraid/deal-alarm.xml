@@ -9,7 +9,7 @@
   <Privileged>false</Privileged>
   <Support>https://github.com/Larosen/deal-alarm</Support>
   <Project>https://github.com/Larosen/deal-alarm</Project>
-  <Overview>Dealalarm für expert und Euronics/media@home: prüft Geräte zyklisch (Standard alle 2 Stunden) in jeder Filiale einzeln und schickt per ntfy einen Dealalarm, sobald der Wunschpreis erreicht ist. Bedienung über die Weboberfläche, Einstellungen (ntfy-Topic, PLZ, Intervall) dort unter „Einstellungen“.</Overview>
+  <Overview>Dealalarm für expert, Euronics/media@home und Amazon (inkl. Warehouse): prüft Geräte zyklisch (Standard alle 2 Stunden) in jeder Filiale einzeln und schickt per ntfy einen Dealalarm, sobald der Wunschpreis erreicht ist. Bedienung über die Weboberfläche, Einstellungen (ntfy-Topic, PLZ, Intervall) dort unter „Einstellungen“.</Overview>
   <Category>Tools: Network:Other</Category>
   <WebUI>http://[IP]:[PORT:8080]/</WebUI>
   <TemplateURL/>
