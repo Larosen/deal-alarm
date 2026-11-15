@@ -35,7 +35,8 @@ und durchsucht auf Wunsch alle expert-Filialen inkl. Direktabzug/Aktionspreis un
 - ntfy mit eigenem Server, Topic, optionalem Access-Token und Priorität; Testnachricht-Button
 - Kein Benachrichtigungs-Spam: Pro Gerät und Shop gibt es einen Alarm, wenn der Wunschpreis erreicht wird.
   Ein weiterer kommt erst, wenn der Preis nochmals fällt oder zwischenzeitlich wieder über dem Wunschpreis lag.
-- Optionaler Passwortschutz (HTTP Basic Auth) über `UI_PASSWORD`
+- Optionaler Passwortschutz (HTTP Basic Auth) über `UI_PASSWORD`, mit Sperre nach wiederholten Fehlversuchen
+  (10 innerhalb von 15 Minuten sperren die IP für 15 Minuten)
 - **Protokoll und Fortschritt:** Jeder Shop hat eine eigene Warteschlange – expert wartet nicht auf den
   langsamen Euronics-Scan, neue Geräte werden sofort geprüft. Karten und Statusleiste zeigen den Fortschritt
   live („120/361 Filialen, bisher günstigster …“), das Protokoll (Button oben) zeigt, was gerade passiert,
@@ -105,7 +106,27 @@ cargo run --release
 | `HOST` | `0.0.0.0` | Bind-Adresse |
 | `DATA_DIR` | `./data` | Ablage für Einstellungen, Watchlist und Ergebnisse |
 | `UI_PASSWORD` | – | Aktiviert Basic Auth (Benutzer `UI_USER`, Standard `admin`) |
+| `TRUSTED_PROXIES` | – | Reverse-Proxys, deren `X-Forwarded-For` ausgewertet wird: IPs, Netze (CIDR) oder `private` |
 | `LOG_LEVEL` | `INFO` | Log-Level (`DEBUG`, `INFO`, `WARNING`, `ERROR`) |
+
+## Hinter einem Reverse-Proxy (z. B. Pangolin)
+
+Für den Zugriff von unterwegs kann der Deal-Alarm hinter einem Reverse-Proxy wie Pangolin, Traefik oder
+Nginx Proxy Manager laufen. Damit Protokoll und Anmeldesperre die echte IP des Besuchers sehen statt
+der des Proxys, wertet der Deal-Alarm `X-Forwarded-For` (bzw. `Forwarded`/`X-Real-IP`) aus, aber nur
+für Verbindungen von Proxys aus `TRUSTED_PROXIES`. Andernfalls könnte jeder per Header eine beliebige
+IP vortäuschen.
+
+1. `TRUSTED_PROXIES` setzen: die IP, von der der Proxy den Deal-Alarm erreicht. Bei Pangolin ist das der
+   Rechner bzw. Container, auf dem Newt läuft. Mehrere Einträge kommagetrennt, Netze als CIDR
+   (`172.18.0.0/16`). `private` steht für alle privaten Netze und passt, wenn der Proxy im Heim- oder
+   Docker-Netz sitzt.
+2. Über den Proxy die Weboberfläche öffnen → **Einstellungen → Zugriff**. Dort steht, welche IP der
+   Deal-Alarm sieht. Kommt die Anfrage über einen Proxy, der noch nicht eingetragen ist, nennt der
+   Hinweis dessen Adresse.
+
+Wer den Deal-Alarm aus dem Internet erreichbar macht, sollte `UI_PASSWORD` setzen oder die
+Authentifizierung von Pangolin nutzen.
 
 ## ntfy einrichten
 

@@ -25,6 +25,7 @@
   <Config Name="Daten" Target="/data" Default="/mnt/user/appdata/deal-alarm" Mode="rw" Description="Watchlist, Einstellungen und Filialpreise (state.json)" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/deal-alarm</Config>
   <Config Name="Zeitzone" Target="TZ" Default="Europe/Berlin" Mode="" Description="Zeitzone für Zeitplan und Logs" Type="Variable" Display="always" Required="false" Mask="false">Europe/Berlin</Config>
   <Config Name="Passwort Weboberfläche" Target="UI_PASSWORD" Default="" Mode="" Description="Optional: schützt die Weboberfläche mit Benutzer/Passwort (leer = kein Schutz)" Type="Variable" Display="always" Required="false" Mask="true"/>
+  <Config Name="Vertrauenswürdige Proxys" Target="TRUSTED_PROXIES" Default="" Mode="" Description="Für den Zugriff über einen Reverse-Proxy (z. B. Pangolin): IPs/Netze (CIDR) oder „private“, deren X-Forwarded-For ausgewertet wird – leer = keine. Kontrolle unter Einstellungen → Zugriff." Type="Variable" Display="always" Required="false" Mask="false"/>
   <Config Name="Benutzer Weboberfläche" Target="UI_USER" Default="admin" Mode="" Description="Benutzername für den Passwortschutz" Type="Variable" Display="advanced" Required="false" Mask="false">admin</Config>
   <Config Name="Log-Level" Target="LOG_LEVEL" Default="INFO" Mode="" Description="DEBUG, INFO, WARNING oder ERROR" Type="Variable" Display="advanced" Required="false" Mask="false">INFO</Config>
 </Container>

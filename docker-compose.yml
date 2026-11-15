@@ -9,5 +9,7 @@ services:
       - ./data:/data
     environment:
       TZ: Europe/Berlin
+      # Hinter einem Reverse-Proxy (z. B. Pangolin): Proxy-IPs/Netze, deren X-Forwarded-For gilt
+      # TRUSTED_PROXIES: private
       # Optionaler Passwortschutz der Weboberfläche (Benutzer: admin)
       # UI_PASSWORD: geheim

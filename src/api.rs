@@ -5,8 +5,10 @@ use crate::model::Offer;
 use crate::shops::{self, common::plz_coordinates, expert, ResolveError};
 use crate::storage::{Settings, SourceConfig, Storage, Watch};
 use crate::util::age_hours;
-use crate::{activity, notifier, ratelimit, scan};
-use axum::extract::{Path, Query, Request, State};
+use crate::clientip::{self, ClientIp, LoginCheck, LoginGuard, TrustedProxies};
+use crate::{activity, notifier, ratelimit, scan, warn};
+use axum::extract::connect_info::MockConnectInfo;
+use axum::extract::{ConnectInfo, Path, Query, Request, State};
 use axum::http::{header, StatusCode};
 use axum::middleware::{self, Next};
 use axum::response::{IntoResponse, Response};
@@ -15,6 +17,7 @@ use axum::{Json, Router};
 use base64::Engine as _;
 use serde_json::{json, Map, Value};
 use std::collections::HashMap;
+use std::net::SocketAddr;
 use std::sync::Arc;
 
 const INDEX_HTML: &str = include_str!("../assets/index.html");
@@ -30,6 +33,9 @@ pub struct AppState {
     pub client: reqwest::Client,
     /// Basic Auth (Benutzer, Passwort), wenn `UI_PASSWORD` gesetzt ist
     pub auth: Option<(String, String)>,
+    /// Reverse-Proxys, deren `X-Forwarded-For` ausgewertet wird (`TRUSTED_PROXIES`)
+    pub trusted_proxies: Arc<TrustedProxies>,
+    pub login_guard: Arc<LoginGuard>,
 }
 
 pub struct ApiError(StatusCode, String);
@@ -60,10 +66,30 @@ fn constant_time_eq(a: &str, b: &str) -> bool {
     diff == 0
 }
 
+/// Ermittelt die echte Besucher-IP (auch hinter Pangolin & Co.) und legt sie in die Request-Extensions.
+async fn client_ip(State(state): State<AppState>, mut request: Request, next: Next) -> Response {
+    let extensions = request.extensions();
+    let peer = extensions
+        .get::<ConnectInfo<SocketAddr>>()
+        .map(|info| info.0.ip())
+        // In Tests setzt MockConnectInfo die Verbindungsadresse
+        .or_else(|| extensions.get::<MockConnectInfo<SocketAddr>>().map(|info| info.0.ip()))
+        .unwrap_or_else(clientip::unspecified);
+    let client = clientip::resolve(peer, request.headers(), &state.trusted_proxies);
+    request.extensions_mut().insert(client);
+    next.run(request).await
+}
+
 async fn basic_auth(State(state): State<AppState>, request: Request, next: Next) -> Response {
     let Some((user, password)) = &state.auth else { return next.run(request).await };
     if request.uri().path() == "/healthz" {
         return next.run(request).await;
+    }
+    let ip = request.extensions().get::<ClientIp>().map(|c| c.ip).unwrap_or_else(clientip::unspecified);
+    if let LoginCheck::Locked(remaining) = state.login_guard.check(ip) {
+        let minutes = remaining.as_secs().div_ceil(60);
+        return (StatusCode::TOO_MANY_REQUESTS, format!("Zu viele fehlgeschlagene Anmeldungen – bitte in {minutes} Min. erneut versuchen"))
+            .into_response();
     }
     let given = request
         .headers()
@@ -76,7 +102,13 @@ async fn basic_auth(State(state): State<AppState>, request: Request, next: Next)
         // Beide Vergleiche immer ausführen
         let (user_ok, password_ok) = (constant_time_eq(u, user), constant_time_eq(p, password));
         if user_ok && password_ok {
+            state.login_guard.succeeded(ip);
             return next.run(request).await;
+        }
+        // Nur echte Fehlversuche zählen, nicht die erste Anfrage des Browsers ohne Zugangsdaten
+        warn!("Anmeldung fehlgeschlagen (Benutzer „{u}“) von {ip}");
+        if state.login_guard.failed(ip) {
+            warn!("{ip} nach wiederholten Fehlversuchen für 15 Minuten gesperrt");
         }
     }
     (StatusCode::UNAUTHORIZED, [(header::WWW_AUTHENTICATE, "Basic realm=\"Deal-Alarm\"")], "Anmeldung erforderlich").into_response()
@@ -99,8 +131,23 @@ pub fn router(state: AppState) -> Router {
         .route("/api/test-notify", post(test_notify))
         .route("/api/euronics/stores/preview", post(euronics_preview))
         .route("/api/article/resolve", get(resolve_article))
+        .route("/api/whoami", get(whoami))
         .layer(middleware::from_fn_with_state(state.clone(), basic_auth))
+        // äußerste Schicht: Die Besucher-IP steht allen weiteren Schichten zur Verfügung
+        .layer(middleware::from_fn_with_state(state.clone(), client_ip))
         .with_state(state)
+}
+
+/// Welche IP der Deal-Alarm für die aktuelle Anfrage sieht – zur Kontrolle der Proxy-Einstellung.
+async fn whoami(State(state): State<AppState>, request: Request) -> Json<Value> {
+    let client = request.extensions().get::<ClientIp>().copied();
+    Json(json!({
+        "ip": client.map(|c| c.ip.to_string()),
+        "peer": client.map(|c| c.peer.to_string()),
+        "via_proxy": client.is_some_and(|c| c.via_proxy),
+        "header_ignored": client.is_some_and(|c| c.header_ignored),
+        "trusted_proxies": state.trusted_proxies.spec(),
+    }))
 }
 
 // ---------- Eingaben bereinigen ----------
@@ -452,6 +499,8 @@ mod tests {
             scheduler: Scheduler::new(),
             client: reqwest::Client::new(),
             auth: auth.map(|(u, p)| (u.to_string(), p.to_string())),
+            trusted_proxies: Arc::new(TrustedProxies::default()),
+            login_guard: Arc::new(LoginGuard::default()),
         };
         Harness { app: router(state), storage, _dir: dir }
     }
@@ -635,5 +684,67 @@ mod tests {
     fn constant_time_compare() {
         assert!(constant_time_eq("abc", "abc"));
         assert!(!constant_time_eq("abc", "abd") && !constant_time_eq("abc", "ab") && !constant_time_eq("", "a"));
+    }
+
+    fn proxied_app(auth: Option<(&str, &str)>, peer: &str) -> (Router, tempfile::TempDir) {
+        let dir = tempfile::tempdir().unwrap();
+        let storage = Arc::new(Storage::open(dir.path()).unwrap());
+        let state = AppState {
+            storage: storage.clone(),
+            engine: Engine::new(storage.clone()),
+            scheduler: Scheduler::new(),
+            client: reqwest::Client::new(),
+            auth: auth.map(|(u, p)| (u.to_string(), p.to_string())),
+            trusted_proxies: Arc::new(TrustedProxies::parse("172.18.0.0/16").unwrap()),
+            login_guard: Arc::new(LoginGuard::new(3, std::time::Duration::from_secs(60), std::time::Duration::from_secs(60))),
+        };
+        let peer: SocketAddr = format!("{peer}:40000").parse().unwrap();
+        (router(state).layer(MockConnectInfo(peer)), dir)
+    }
+
+    async fn whoami_with(app: &Router, forwarded: Option<&str>, auth: Option<&str>) -> (StatusCode, Value) {
+        let mut request = HttpRequest::builder().uri("/api/whoami");
+        if let Some(f) = forwarded {
+            request = request.header("x-forwarded-for", f);
+        }
+        if let Some(a) = auth {
+            request = request.header("authorization", a);
+        }
+        let response = app.clone().oneshot(request.body(Body::empty()).unwrap()).await.unwrap();
+        let status = response.status();
+        let bytes = response.into_body().collect().await.unwrap().to_bytes();
+        (status, serde_json::from_slice(&bytes).unwrap_or(Value::Null))
+    }
+
+    #[tokio::test]
+    async fn whoami_shows_visitor_ip_behind_trusted_proxy() {
+        let (app, _dir) = proxied_app(None, "172.18.0.4");
+        let (_, body) = whoami_with(&app, Some("6.6.6.6, 198.51.100.7"), None).await;
+        assert_eq!(body["ip"], "198.51.100.7");
+        assert_eq!(body["peer"], "172.18.0.4");
+        assert_eq!(body["via_proxy"], true);
+        // Direkter Zugriff von außen: gefälschter Header wird ignoriert und gemeldet
+        let (app, _dir) = proxied_app(None, "203.0.113.9");
+        let (_, body) = whoami_with(&app, Some("198.51.100.7"), None).await;
+        assert_eq!(body["ip"], "203.0.113.9");
+        assert_eq!(body["header_ignored"], true);
+    }
+
+    #[tokio::test]
+    async fn failed_logins_lock_only_the_visitor_not_the_proxy() {
+        let (app, _dir) = proxied_app(Some(("admin", "geheim")), "172.18.0.4");
+        let wrong = format!("Basic {}", base64::engine::general_purpose::STANDARD.encode("admin:falsch"));
+        let right = format!("Basic {}", base64::engine::general_purpose::STANDARD.encode("admin:geheim"));
+        // Erste Anfrage des Browsers ohne Zugangsdaten zählt nicht als Fehlversuch
+        assert_eq!(whoami_with(&app, Some("198.51.100.7"), None).await.0, StatusCode::UNAUTHORIZED);
+        for _ in 0..3 {
+            assert_eq!(whoami_with(&app, Some("198.51.100.7"), Some(&wrong)).await.0, StatusCode::UNAUTHORIZED);
+        }
+        // gesperrt – auch mit richtigem Passwort
+        assert_eq!(whoami_with(&app, Some("198.51.100.7"), Some(&right)).await.0, StatusCode::TOO_MANY_REQUESTS);
+        // andere Besucher hinter demselben Proxy sind nicht betroffen
+        let (status, body) = whoami_with(&app, Some("198.51.100.8"), Some(&right)).await;
+        assert_eq!(status, StatusCode::OK);
+        assert_eq!(body["ip"], "198.51.100.8");
     }
 }
