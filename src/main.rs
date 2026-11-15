@@ -36,6 +36,10 @@ async fn shutdown_signal() {
 
 #[tokio::main]
 async fn main() {
+    if std::env::args().any(|a| a == "--version") {
+        println!("deal-alarm {}", env!("CARGO_PKG_VERSION"));
+        return;
+    }
     if std::env::args().any(|a| a == "--healthcheck") {
         std::process::exit(healthcheck().await);
     }
