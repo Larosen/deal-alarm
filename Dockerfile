@@ -7,7 +7,12 @@ RUN mkdir src && echo 'fn main() {}' > src/main.rs && echo '' > src/lib.rs \
     && cargo build --release && rm -rf src target/release/deps/deal_alarm* target/release/deal-alarm*
 COPY src ./src
 COPY assets ./assets
-RUN cargo build --release
+# Zeitstempel erneuern: Die kopierten Quellen sind älter als der Platzhalter-Build oben, Cargo hielte ihn
+# sonst für aktuell und ins Image käme das leere Programm. Der --version-Aufruf bricht den Build ab, falls das
+# je wieder passiert.
+RUN touch src/main.rs src/lib.rs \
+    && cargo build --release \
+    && ./target/release/deal-alarm --version | grep -q "^deal-alarm "
 
 # --- Laufzeit ---
 FROM debian:bookworm-slim
