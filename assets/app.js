@@ -393,6 +393,24 @@ $("#article-query").addEventListener("keydown", (ev) => { if (ev.key === "Enter"
 const settingsDialog = $("#settings-dialog");
 const settingsForm = $("#settings-form");
 
+// Welche IP der Deal-Alarm sieht – zeigt, ob die Reverse-Proxy-Einstellung (TRUSTED_PROXIES) stimmt
+async function showWhoami() {
+  const out = $("#whoami");
+  try {
+    const w = await api("GET", "/api/whoami");
+    if (w.via_proxy) {
+      out.textContent = `Deine IP laut Deal-Alarm: ${w.ip} (über den Proxy ${w.peer}).`;
+    } else if (w.header_ignored) {
+      out.textContent = `Deine IP laut Deal-Alarm: ${w.ip}. Die Anfrage kam über einen Proxy (X-Forwarded-For), `
+        + `${w.peer} ist aber nicht als vertrauenswürdig eingetragen. Für Pangolin & Co. die Variable TRUSTED_PROXIES `
+        + `auf ${w.peer} oder „private“ setzen.`;
+    } else {
+      out.textContent = `Deine IP laut Deal-Alarm: ${w.ip} (direkte Verbindung).`
+        + (w.trusted_proxies ? ` Vertrauenswürdige Proxys: ${w.trusted_proxies}` : "");
+    }
+  } catch (e) { out.textContent = e.message; }
+}
+
 $("#btn-settings").addEventListener("click", () => {
   settingsForm.reset();
   fillForm(settingsForm, state.settings);
@@ -401,6 +419,7 @@ $("#btn-settings").addEventListener("click", () => {
     .join(" · ");
   $("#settings-error").textContent = "";
   previewStores();
+  showWhoami();
   $("#test-result").textContent = "";
   settingsDialog.showModal();
 });
