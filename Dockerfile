@@ -25,9 +25,10 @@ ENV DATA_DIR=/data \
     PORT=8080 \
     TZ=Europe/Berlin
 
-# Zeitzonendaten, sonst greift TZ nicht und alle Zeiten laufen in UTC
+# Zeitzonendaten (sonst greift TZ nicht) und Stammzertifikate: reqwest prüft HTTPS-Verbindungen
+# gegen die Zertifikate des Systems, ohne ca-certificates schlüge jede Shop-Abfrage fehl
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends tzdata \
+    && apt-get install -y --no-install-recommends tzdata ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=build /src/target/release/deal-alarm /usr/local/bin/deal-alarm

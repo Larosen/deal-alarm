@@ -6,7 +6,7 @@ use crate::notifier;
 use crate::shops::{self, Source};
 use crate::storage::{Settings, Storage, Watch};
 use crate::util::{format_price, now_iso};
-use rand::Rng;
+use rand::RngExt;
 use serde_json::{json, Value};
 use std::collections::{HashMap, VecDeque};
 use std::sync::{Arc, Mutex};
@@ -323,7 +323,7 @@ impl Scheduler {
     pub fn next_delay(settings: &Settings) -> f64 {
         let interval = (settings.interval_minutes as f64).max(15.0);
         let jitter = (settings.jitter_minutes as f64).max(0.0).min(interval / 2.0);
-        let offset = if jitter > 0.0 { rand::thread_rng().gen_range(-jitter..=jitter) } else { 0.0 };
+        let offset = if jitter > 0.0 { rand::rng().random_range(-jitter..=jitter) } else { 0.0 };
         (interval + offset) * 60.0
     }
 
