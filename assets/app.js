@@ -326,6 +326,8 @@ function openWatchDialog(w) {
   $("#article-results").classList.add("hidden");
   $("#article-query").value = "";
   $("#article-status").textContent = "";
+  $("#article-locate").classList.add("hidden");
+  locateRun++;
   watchDialog.showModal();
 }
 
@@ -361,6 +363,77 @@ function applyArticle(article) {
   }
   $("#article-status").textContent = status.join(" · ");
   $("#article-results").classList.add("hidden");
+  locateOthers(article);
+}
+
+// Sucht das Gerät gleichzeitig in den übrigen Shops und zeigt, was gefunden wurde.
+// Sichere Treffer (gleiche EAN bzw. Modellnummer) werden als feste Zuordnung eingetragen,
+// ähnliche Geräte (Händler-Varianten) nur nach Bestätigung.
+let locateRun = 0;
+const CONFIDENCE_TEXT = { ean: "gleiche EAN", name: "Name und Modellnummer passen" };
+async function locateOthers(article) {
+  const list = $("#article-locate");
+  const run = ++locateRun;
+  const name = article.title || watchForm.elements.name.value;
+  const skip = Object.keys(article.found || {});
+  const pending = SOURCES.filter((s) => !skip.includes(s.id));
+  if (!pending.length || (!article.ean && (name || "").trim().length < 3)) {
+    list.classList.add("hidden");
+    return;
+  }
+  list.replaceChildren();
+  list.classList.remove("hidden");
+  const li = document.createElement("li");
+  li.textContent = `Suche in ${pending.map((s) => s.label).join(", ")} …`;
+  list.append(li);
+  let res;
+  try {
+    const params = new URLSearchParams({ ean: article.ean || "", name: name || "", skip: skip.join(",") });
+    res = await api("GET", `/api/article/locate?${params}`);
+  } catch (e) {
+    li.textContent = `Suche in den anderen Shops fehlgeschlagen: ${e.message}`;
+    return;
+  }
+  if (run !== locateRun) return; // inzwischen anderer Artikel gewählt
+  list.replaceChildren();
+  for (const src of pending) {
+    const row = document.createElement("li");
+    const label = document.createElement("strong");
+    label.textContent = `${src.label}: `;
+    row.append(label);
+    const set = $(`fieldset[data-source="${src.id}"]`);
+    const queryField = $('[data-field="query"]', set);
+    const hit = res.found[src.id];
+    const link = (h) => {
+      const a = document.createElement("a");
+      a.href = h.query; a.target = "_blank"; a.rel = "noopener";
+      a.textContent = h.title || h.query;
+      return a;
+    };
+    if (hit && hit.confidence !== "variant") {
+      queryField.value = hit.query;
+      $('[data-field="enabled"]', set).checked = true;
+      row.append("✔ ", link(hit), ` (${CONFIDENCE_TEXT[hit.confidence]})`);
+    } else if (hit) {
+      row.classList.add("warn");
+      row.append("⚠ ähnliches Gerät, evtl. Händler-Variante: ", link(hit));
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.textContent = "übernehmen";
+      btn.addEventListener("click", () => {
+        queryField.value = hit.query;
+        $('[data-field="enabled"]', set).checked = true;
+        row.classList.remove("warn");
+        btn.replaceWith(" ✔ übernommen");
+      });
+      row.append(btn);
+    } else if (res.errors[src.id]) {
+      row.append(`Suche nicht möglich (${res.errors[src.id]}) – wird bei der Prüfung erneut versucht`);
+    } else {
+      row.append("nicht gefunden – wird bei jeder Prüfung erneut gesucht");
+    }
+    list.append(row);
+  }
 }
 
 async function searchArticle() {

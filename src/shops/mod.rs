@@ -9,6 +9,8 @@ pub mod amazon;
 pub mod common;
 pub mod euronics;
 pub mod expert;
+#[cfg(test)]
+mod fixtures;
 pub mod idealo;
 
 use crate::activity::ScanReporter;
@@ -72,6 +74,31 @@ pub struct Hit {
     pub ean: String,
     pub query: String,
     pub source: String,
+}
+
+/// Per Suche gefundene Zuordnungen werden nach dieser Zeit erneut gesucht (neue/bessere Angebote).
+/// Eingetragene URLs gelten unbegrenzt.
+pub const REDISCOVER_HOURS: f64 = 7.0 * 24.0;
+
+/// Wie sicher eine automatische Zuordnung ist.
+#[derive(Serialize, Clone, Copy, Debug, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum Confidence {
+    /// gleiche EAN (bzw. eingetragene URL)
+    Ean,
+    /// Name und Modellnummer stimmen überein
+    Name,
+    /// ähnliches Gerät, evtl. Händler-Variante – der Nutzer muss bestätigen
+    Variant,
+}
+
+/// Ergebnis der Suche nach einem Gerät bei einer Quelle (beim Anlegen).
+#[derive(Serialize, Clone, Debug)]
+pub struct Located {
+    /// Produkt-Angabe für das Gerät (URL, ASIN, …)
+    pub query: String,
+    pub title: String,
+    pub confidence: Confidence,
 }
 
 #[derive(Debug, Clone)]
@@ -153,6 +180,15 @@ pub trait Source: Send + Sync {
     /// Sucht den Artikel anhand der EAN (wenn die Quelle das schnell kann; sonst `None`).
     async fn lookup_ean(&self, _ean: &str) -> Result<Option<Identity>, String> {
         Ok(None)
+    }
+
+    /// Sucht das Gerät (EAN, sonst Name) wie bei einer Prüfung, ohne Preise abzufragen.
+    /// `Ok(None)` = nicht gefunden. Standard: nur über [`Source::lookup_ean`].
+    async fn locate(&self, watch: &Watch, _settings: &Settings) -> Result<Option<Located>, String> {
+        if watch.ean.trim().is_empty() {
+            return Ok(None);
+        }
+        Ok(self.lookup_ean(watch.ean.trim()).await?.map(|i| Located { query: i.query, title: i.title, confidence: Confidence::Ean }))
     }
 
     /// Freitextsuche – `None`, wenn die Quelle keine anbietet.

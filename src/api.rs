@@ -131,6 +131,7 @@ pub fn router(state: AppState) -> Router {
         .route("/api/test-notify", post(test_notify))
         .route("/api/euronics/stores/preview", post(euronics_preview))
         .route("/api/article/resolve", get(resolve_article))
+        .route("/api/article/locate", get(locate_article))
         .route("/api/whoami", get(whoami))
         .layer(middleware::from_fn_with_state(state.clone(), basic_auth))
         // äußerste Schicht: Die Besucher-IP steht allen weiteren Schichten zur Verfügung
@@ -474,6 +475,45 @@ async fn resolve_article(Query(q): Query<HashMap<String, String>>) -> ApiResult 
     }
     Ok(Json(json!({"article": {"title": title, "ean": identity.ean, "queries": queries, "found": found}})))
 }
+
+/// Sucht ein Gerät (EAN und/oder Name) gleichzeitig bei allen Quellen – für die Übersicht beim Anlegen.
+///
+/// `skip` (kommagetrennt) lässt Quellen aus, die schon zugeordnet sind.
+async fn locate_article(State(app): State<AppState>, Query(q): Query<HashMap<String, String>>) -> ApiResult {
+    let get = |k: &str| q.get(k).map(|s| s.trim().to_string()).unwrap_or_default();
+    let (ean, name) = (get("ean"), get("name"));
+    if ean.is_empty() && name.chars().count() < 3 {
+        return Err(ApiError::bad("Bitte EAN oder Gerätenamen angeben"));
+    }
+    let skip: Vec<String> = get("skip").split(',').map(|s| s.trim().to_string()).filter(|s| !s.is_empty()).collect();
+    let watch = Watch { name, ean, ..Default::default() };
+    let settings = app.storage.get_settings();
+    let jobs = shops::all().iter().filter(|s| !skip.iter().any(|x| x == s.id())).map(|source| {
+        let (source, watch, settings) = (source.clone(), watch.clone(), settings.clone());
+        async move {
+            let result = tokio::time::timeout(LOCATE_TIMEOUT, source.locate(&watch, &settings))
+                .await
+                .unwrap_or_else(|_| Err("Zeitüberschreitung bei der Suche".into()));
+            (source.id(), result)
+        }
+    });
+    let (mut found, mut missing, mut errors) = (Map::new(), vec![], Map::new());
+    for (id, result) in futures::future::join_all(jobs).await {
+        match result {
+            Ok(Some(hit)) => {
+                found.insert(id.to_string(), json!(hit));
+            }
+            Ok(None) => missing.push(id),
+            Err(e) => {
+                errors.insert(id.to_string(), json!(e));
+            }
+        }
+    }
+    Ok(Json(json!({"found": found, "missing": missing, "errors": errors})))
+}
+
+/// Höchstdauer der Suche je Quelle (Amazon ist bewusst langsam).
+const LOCATE_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(60);
 
 #[cfg(test)]
 mod tests {
