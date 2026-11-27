@@ -20,7 +20,7 @@
 //! Amazon blockt Automaten schnell (Captcha-Seite, HTTP 503). Das Tempo ist deshalb niedrig
 //! (Standard 4 Anfragen/Minute) und ein Captcha wird wie eine Drosselung behandelt.
 
-use super::common::http_client_with_cookies;
+use super::common::{best_name_match, http_client_with_cookies, name_match, name_terms, NAME_MATCH_MIN};
 use super::{Identity, OptionDef, ResolveError, Source};
 use crate::model::{CheckError, Coords, Offer, ShopResult, StoreEntry, StoreState};
 use crate::ratelimit::{self, AdaptiveLimiter};
@@ -187,13 +187,48 @@ fn is_blocked(page: &str) -> bool {
         || lower.contains("api-services-support@amazon")
 }
 
-fn first_search_asin(page: &str) -> Option<String> {
+/// Ein Treffer der Amazon-Suche.
+#[derive(Debug, Clone, PartialEq)]
+pub struct SearchResult {
+    pub asin: String,
+    pub title: String,
+    pub sponsored: bool,
+}
+
+/// Treffer einer Amazon-Suchseite in Reihenfolge (ohne leere Platzhalter).
+pub fn parse_search(page: &str) -> Vec<SearchResult> {
     let doc = Html::parse_document(page);
     let results = sel("div[data-component-type=\"s-search-result\"][data-asin]");
+    let title_sel = sel("h2");
+    let sponsored_sel = sel(".puis-sponsored-label-text, .s-sponsored-label-text, [data-component-type=\"sp-sponsored-result\"]");
     doc.select(&results)
-        .filter_map(|el| el.value().attr("data-asin"))
-        .find(|a| !a.is_empty())
-        .map(str::to_string)
+        .filter_map(|el| {
+            let asin = el.value().attr("data-asin").filter(|a| !a.is_empty())?.to_string();
+            let classes = el.value().attr("class").unwrap_or("");
+            let sponsored = classes.contains("AdHolder") || el.select(&sponsored_sel).next().is_some();
+            let title = el.select(&title_sel).map(text_of).max_by_key(|t| t.len()).unwrap_or_default();
+            Some(SearchResult { asin, title, sponsored })
+        })
+        .collect()
+}
+
+/// Bei der EAN-Suche zählt der erste nicht gesponserte Treffer – passt er nicht zum Gerätenamen,
+/// wird er verworfen (Amazon zeigt zur EAN gern Ähnliches statt nichts).
+fn pick_ean_result(results: &[SearchResult], name: &str) -> Option<String> {
+    let first = results.iter().find(|r| !r.sponsored).or(results.first())?;
+    let name_ok = name.trim().is_empty() || first.title.is_empty() || name_match(name, &first.title) >= NAME_MATCH_MIN;
+    name_ok.then(|| first.asin.clone())
+}
+
+/// Bester zum Namen passender Treffer (gesponserte zählen nur, wenn sonst keiner passt).
+fn pick_name_result(results: &[SearchResult], name: &str) -> Option<(String, String)> {
+    let organic: Vec<&SearchResult> = results.iter().filter(|r| !r.sponsored).collect();
+    for list in [organic, results.iter().collect()] {
+        if let Some((i, _)) = best_name_match(name, list.iter().map(|r| r.title.as_str())) {
+            return Some((list[i].asin.clone(), list[i].title.clone()));
+        }
+    }
+    None
 }
 
 fn product_title(page: &str) -> Option<String> {
@@ -263,26 +298,56 @@ impl Amazon {
         Ok(Some((body, final_url)))
     }
 
+    async fn search(&self, limiter: &AdaptiveLimiter, term: &str) -> Result<Vec<SearchResult>, CheckError> {
+        let url = format!("{}/s", self.base);
+        let (page, _) = self.fetch(limiter, &url, &[("k", term)]).await?.ok_or_else(|| CheckError::lookup("Amazon-Suche nicht erreichbar"))?;
+        Ok(parse_search(&page))
+    }
+
+    /// ASIN aus URL/ASIN, sonst per Suche: erst EAN bzw. eigener Suchbegriff, dann Gerätename.
     async fn resolve_asin(&self, watch: &Watch, limiter: &AdaptiveLimiter, state: &StoreState) -> Result<String, CheckError> {
         let query = watch.source("amazon").query.trim().to_string();
         if let Some(asin) = extract_asin(&query) {
             return Ok(asin);
         }
         let ean = watch.ean.trim().to_string();
-        let term = if query.is_empty() { ean.clone() } else { query };
-        if term.is_empty() {
-            return Err(CheckError::Other("Keine Amazon-URL, ASIN bzw. EAN hinterlegt".into()));
+        let term = if query.is_empty() { ean.clone() } else { query.clone() };
+        let names = name_terms(watch, "amazon");
+        if term.is_empty() && names.is_empty() {
+            return Err(CheckError::Other("Keine Amazon-URL, ASIN, EAN oder Gerätename hinterlegt".into()));
         }
-        if state.meta_str("search_term") == Some(term.as_str()) {
+        if state.meta_str("search_term") == Some(term.as_str()) && state.meta_str("search_name") == Some(watch.name.trim()) {
             if let Some(asin) = state.meta_str("asin") {
                 return Ok(asin.to_string());
             }
         }
-        let url = format!("{}/s", self.base);
-        let (page, _) = self.fetch(limiter, &url, &[("k", term.as_str())]).await?.ok_or_else(|| CheckError::lookup("Amazon-Suche nicht erreichbar"))?;
-        first_search_asin(&page).ok_or_else(|| {
-            CheckError::lookup(format!("Bei Amazon nicht gefunden (Suche nach „{term}“ ohne Treffer) – falls vorhanden, Produkt-URL oder ASIN im Gerät eintragen"))
-        })
+        if !term.is_empty() {
+            let results = self.search(limiter, &term).await?;
+            // Eigener Suchbegriff: erster Treffer; EAN: erster Treffer, wenn er zum Namen passt
+            let picked = if query.is_empty() { pick_ean_result(&results, &watch.name) } else { results.iter().find(|r| !r.sponsored).or(results.first()).map(|r| r.asin.clone()) };
+            if let Some(asin) = picked {
+                return Ok(asin);
+            }
+            if !query.is_empty() {
+                return Err(CheckError::lookup(format!("Bei Amazon nicht gefunden (Suche nach „{term}“ ohne Treffer)")));
+            }
+        }
+        let mut tried = vec![];
+        if !term.is_empty() {
+            tried.push(term.clone());
+        }
+        for name in names {
+            let results = self.search(limiter, &name).await?;
+            if let Some((asin, title)) = pick_name_result(&results, &name) {
+                crate::info!("Amazon · {}: über Namenssuche „{name}“ gefunden: {title} ({asin})", watch.name);
+                return Ok(asin);
+            }
+            tried.push(name);
+        }
+        Err(CheckError::lookup(format!(
+            "Bei Amazon nicht gefunden (Suche nach {} ohne passenden Treffer) – falls vorhanden, Produkt-URL oder ASIN im Gerät eintragen",
+            tried.iter().map(|t| format!("„{t}“")).collect::<Vec<_>>().join(", ")
+        )))
     }
 }
 
@@ -407,6 +472,7 @@ impl Source for Amazon {
         if watch.source("amazon").query.trim().is_empty() {
             new_state.meta.insert("search_term".into(), json!(watch.ean.trim()));
         }
+        new_state.meta.insert("search_name".into(), json!(watch.name.trim()));
 
         let fresh = scan::fresh_offers(&new_state, f64::INFINITY);
         let matching = self.filter_offers(fresh, watch, settings, None);
@@ -598,6 +664,59 @@ mod tests {
         assert_eq!(result.price, Some(279.0));
         assert_eq!(state.meta_str("asin"), Some("B0DEMO1234"));
         assert_eq!(state.meta_str("search_term"), Some("4548736146000"));
+    }
+
+    fn result_html(asin: &str, title: &str, sponsored: bool) -> String {
+        format!(
+            r#"<div data-component-type="s-search-result" data-asin="{asin}" class="s-result-item{}"><h2><span>{title}</span></h2>{}</div>"#,
+            if sponsored { " AdHolder" } else { "" },
+            if sponsored { r#"<span class="puis-sponsored-label-text">Gesponsert</span>"# } else { "" }
+        )
+    }
+
+    #[test]
+    fn parses_search_results() {
+        let page = format!("{}{}", result_html("B0AD000000", "Werbung", true), result_html("B0DEMO1234", "Sony WH-1000XM6 Kopfhörer", false));
+        let results = parse_search(&page);
+        assert_eq!(results.len(), 2);
+        assert!(results[0].sponsored && !results[1].sponsored);
+        assert_eq!(results[1].title, "Sony WH-1000XM6 Kopfhörer");
+        assert_eq!(pick_ean_result(&results, "Sony WH-1000XM6").as_deref(), Some("B0DEMO1234"));
+        assert_eq!(pick_ean_result(&results, "Bosch Akkuschrauber GSR 18V"), None);
+        assert_eq!(pick_name_result(&results, "sony wh-1000xm6").map(|r| r.0).as_deref(), Some("B0DEMO1234"));
+    }
+
+    #[tokio::test]
+    async fn falls_back_to_name_search() {
+        let router = Router::new()
+            .route("/gp/product/ajax/ref=dp_aod_ALL_mbc", get(|| async { Html(aod_page()) }))
+            .route("/s", get(|Query(q): Query<HashMap<String, String>>| async move {
+                Html(match q["k"].as_str() {
+                    // EAN-Suche liefert nur Ähnliches
+                    "4548736146000" => result_html("B0WRONG000", "Sony WH-1000XM4 Kopfhörer", false),
+                    "Sony WH-1000XM6" => format!(
+                        "{}{}{}",
+                        result_html("B0AD000000", "Sony WH-1000XM6 Hülle", true),
+                        result_html("B0WRONG000", "Sony WH-1000XM4", false),
+                        result_html("B0DEMO1234", "Sony WH-1000XM6 Kabellose Kopfhörer, Schwarz", false)
+                    ),
+                    _ => String::new(),
+                })
+            }));
+        let amazon = Amazon::new(&serve(router).await, "amazon-test-7");
+        let mut reporter = crate::activity::ScanReporter::new("amazon-test", "Amazon", "x", None);
+        let mut w = watch(json!({}), "", "4548736146000");
+        w.name = "Sony WH-1000XM6".into();
+        let (_, state) = amazon.check(&w, &settings(), StoreState::default(), &mut reporter).await.unwrap();
+        assert_eq!(state.meta_str("asin"), Some("B0DEMO1234"));
+
+        // Ohne EAN genügt der Name; ohne passenden Treffer gibt es eine verständliche Meldung
+        w.ean = String::new();
+        let (_, state) = amazon.check(&w, &settings(), StoreState::default(), &mut reporter).await.unwrap();
+        assert_eq!(state.meta_str("asin"), Some("B0DEMO1234"));
+        w.name = "Unbekanntes Gerät XY99".into();
+        let err = amazon.check(&w, &settings(), StoreState::default(), &mut reporter).await.unwrap_err();
+        assert!(matches!(err, CheckError::Lookup { .. }) && err.message().contains("XY99"), "{err:?}");
     }
 
     #[tokio::test]

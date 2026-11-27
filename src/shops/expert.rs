@@ -1,6 +1,6 @@
 //! Preisabfrage bei expert – basierend auf expert-checker reborn (MyDealz @Barney & @Gorex).
 
-use super::common::{http_client, plz_coordinates};
+use super::common::{best_name_match, http_client, name_terms, plz_coordinates};
 use super::{Hit, Identity, OptionDef, ResolveError, Source};
 use crate::model::{CheckError, Coords, Offer, ShopResult, StoreState};
 use crate::ratelimit::{self, AdaptiveLimiter};
@@ -226,6 +226,12 @@ impl Expert {
         self.article_by("ean", ean).await
     }
 
+    /// Bester zum Namen passender Artikel der expert-Suche (Modellnummer muss übereinstimmen).
+    pub async fn find_by_name(&self, name: &str) -> Result<Option<Article>, String> {
+        let hits = self.search_articles(name).await?;
+        Ok(best_name_match(name, hits.iter().map(|a| a.title.as_str())).map(|(i, _)| hits[i].clone()))
+    }
+
     /// Löst URL, Webcode, EAN oder Suchbegriff (erster Treffer) zu Produktinfos auf.
     pub async fn resolve(&self, query: &str) -> Result<Article, ResolveError> {
         let fail = |e: String| ResolveError::Failed(e);
@@ -436,14 +442,31 @@ impl Source for Expert {
         let product = if !query.is_empty() {
             self.resolve(query).await.map_err(CheckError::from)?
         } else {
-            // Artikel wurde über einen anderen Shop ausgewählt: per EAN zuordnen
-            match self.find_by_ean(&watch.ean).await.map_err(CheckError::Other)? {
+            // Artikel wurde über einen anderen Shop ausgewählt: per EAN zuordnen, sonst über den Namen
+            let mut found = None;
+            if !watch.ean.trim().is_empty() {
+                found = self.find_by_ean(watch.ean.trim()).await.map_err(CheckError::Other)?;
+            }
+            if found.is_none() {
+                for name in name_terms(watch, "expert") {
+                    if let Some(p) = self.find_by_name(&name).await.map_err(CheckError::Other)? {
+                        crate::info!("expert · {}: über Namenssuche „{name}“ gefunden: {} (Webcode {})", watch.name, p.title, p.webcode);
+                        found = Some(p);
+                        break;
+                    }
+                }
+            }
+            match found {
                 Some(p) => p,
                 None => {
                     return Ok((
                         ShopResult {
                             ean: watch.ean.clone(),
-                            detail: format!("Nicht im expert-Sortiment (EAN {})", watch.ean),
+                            detail: if watch.ean.trim().is_empty() {
+                                format!("Nicht im expert-Sortiment („{}“)", watch.name)
+                            } else {
+                                format!("Nicht im expert-Sortiment (EAN {}, auch per Namenssuche nicht gefunden)", watch.ean)
+                            },
                             ..Default::default()
                         },
                         StoreState::default(),
@@ -642,6 +665,23 @@ mod tests {
         let mut reporter = crate::activity::ScanReporter::new("expert-test", "expert", "x", None);
         let (result, _) = expert.check(&watch, &Settings::default(), StoreState::default(), &mut reporter).await.unwrap();
         assert!(result.error.is_none() && !result.available && result.detail.contains("Nicht im expert-Sortiment"));
+    }
+
+    #[tokio::test]
+    async fn unknown_ean_falls_back_to_name() {
+        let expert = Expert::new(&serve(mock()).await, "expert-test-5");
+        let mut watch = Watch { name: "Tool".into(), ean: "0000000000000".into(), ..Default::default() };
+        watch.sources.insert("expert".into(), SourceConfig {
+            enabled: true,
+            options: json!({"all_branches": false}).as_object().unwrap().clone(),
+            ..Default::default()
+        });
+        let settings = Settings { expert_rate_per_min: 60000, ..Default::default() };
+        let mut reporter = crate::activity::ScanReporter::new("expert-test", "expert", "Tool", None);
+        let (result, _) = expert.check(&watch, &settings, StoreState::default(), &mut reporter).await.unwrap();
+        assert_eq!(result.ean, "4006381333931");
+        assert!(result.price.is_some());
+        assert!(expert.find_by_name("Other 42").await.unwrap().is_none());
     }
 
     #[tokio::test]

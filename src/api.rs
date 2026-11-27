@@ -335,7 +335,8 @@ async fn create_watch(State(app): State<AppState>, request: Request) -> Result<(
     let body = json_body(request).await?;
     let mut watch = Watch::default();
     apply_watch_values(&mut watch, &body)?;
-    if watch.ean.is_empty() && watch.sources.values().all(|c| c.query.is_empty()) {
+    // Ohne EAN und Produkt-Angabe wird über den Gerätenamen gesucht – der muss dann aussagekräftig sein
+    if watch.ean.is_empty() && watch.sources.values().all(|c| c.query.is_empty()) && watch.name.trim().chars().count() < 3 {
         return Err(ApiError::bad("Bitte einen Artikel auswählen"));
     }
     if watch.target_price <= 0.0 {
@@ -539,12 +540,12 @@ mod tests {
         assert_eq!(status, 200);
         assert_eq!(state["watches"], json!([]));
         assert_eq!(state["settings"]["interval_minutes"], 120);
-        assert_eq!(state["activity"].as_object().unwrap().keys().cloned().collect::<Vec<_>>(), ["amazon", "euronics", "expert"]);
+        assert_eq!(state["activity"].as_object().unwrap().keys().cloned().collect::<Vec<_>>(), ["amazon", "euronics", "expert", "idealo"]);
 
         let (status, sources) = call(&h.app, "GET", "/api/sources", None, None).await;
         assert_eq!(status, 200);
         let ids: Vec<_> = sources.as_array().unwrap().iter().map(|s| s["id"].as_str().unwrap()).collect();
-        assert_eq!(ids, ["expert", "euronics", "amazon"]);
+        assert_eq!(ids, ["expert", "euronics", "amazon", "idealo"]);
         assert!(sources[2]["options"].as_array().unwrap().iter().any(|o| o["key"] == "warehouse_min_condition" && o["kind"] == "select"));
 
         // Validierung
