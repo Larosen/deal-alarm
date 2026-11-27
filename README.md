@@ -1,4 +1,4 @@
-# 🔔 Deal-Alarm – expert, Euronics & Amazon
+# 🔔 Deal-Alarm – expert, Euronics, Amazon & idealo
 
 Überwacht Geräte zyklisch (standardmäßig etwa alle 2 Stunden) bei **expert**, **Euronics/media@home**
 und **Amazon** (inkl. **Amazon Warehouse**) und schickt per [ntfy](https://ntfy.sh) einen **Dealalarm**, sobald ein Gerät zum vorher festgelegten
@@ -26,7 +26,13 @@ und durchsucht auf Wunsch alle expert-Filialen inkl. Direktabzug/Aktionspreis un
     wöchentlich aktualisiert; optional nur Märkte im Umkreis deiner PLZ
   - eigene Märkte zusätzlich eintragbar, z. B. `https://www.euronics.de/hamburg-buddenhagen`
   - eigenes Rate-Limit pro Domain (euronics.de und mediaathome.de)
-- **Amazon** (amazon.de): ASIN, Produkt-URL oder Suche über die EAN
+- **Namenssuche als Fallback:** Findet ein Shop die EAN nicht (bei Amazon häufig), sucht der Deal-Alarm nach dem
+  Gerätenamen bzw. dem Produkttitel aus einem anderen Shop. Übernommen wird nur ein Treffer, dessen **Modellnummer**
+  übereinstimmt (z. B. `WH-1000XM6`, nicht `WH-1000XM4`; Zubehör wie Hüllen wird aussortiert). Ein Gerät kann auch ganz
+  ohne EAN nur über den Namen beobachtet werden („per Namenssuche in allen Shops beobachten“ in der Suche).
+- **idealo** (Preisvergleich): Bestpreis über alle Händler – idealo-URL oder automatisch über EAN/Gerätename,
+  eine Anfrage pro Prüfung. Bei bestehenden Geräten ist idealo zunächst aus und lässt sich pro Gerät aktivieren.
+- **Amazon** (amazon.de): ASIN, Produkt-URL oder Suche über die EAN, sonst über den Namen
   - **Amazon Warehouse** (Gebrauchtware) mit Mindestzustand (*Wie neu*, *Sehr gut*, *Gut*, *Akzeptabel*)
   - Neuware von Amazon, optional auch von Drittanbietern
   - Tabelle „Alle Angebote“ mit dem günstigsten Angebot je Zustand und Verkäufer

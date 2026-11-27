@@ -38,6 +38,8 @@ pub struct Settings {
     pub euronics_stores: String,
     /// Amazon blockt schnell – bewusst langsam
     pub amazon_rate_per_min: i64,
+    /// idealo (Preisvergleich) – eine Anfrage pro Prüfung
+    pub idealo_rate_per_min: i64,
     /// ältere Filialpreise zählen nicht mehr für den Dealalarm
     pub price_max_age_hours: i64,
 }
@@ -61,6 +63,7 @@ impl Default for Settings {
             euronics_use_directory: true,
             euronics_stores: String::new(),
             amazon_rate_per_min: 4,
+            idealo_rate_per_min: 10,
             price_max_age_hours: 24,
         }
     }

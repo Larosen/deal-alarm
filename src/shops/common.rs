@@ -73,3 +73,115 @@ pub fn http_client_with_cookies(accept: &str) -> reqwest::Client {
         .build()
         .expect("HTTP-Client")
 }
+
+/// Wörter, die bei der Namenssuche nichts über das Gerät aussagen.
+const FILLER: &[&str] = &[
+    "und", "mit", "für", "fur", "the", "and", "with", "von", "der", "die", "das", "inkl", "neu", "new", "ohne",
+    "zoll", "inch", "schwarz", "weiss", "weiß", "silber", "grau", "black", "white", "silver", "edition",
+];
+
+/// Zerlegt einen Produktnamen in kleingeschriebene Wörter (Satzzeichen trennen).
+pub fn name_tokens(text: &str) -> Vec<String> {
+    text.to_lowercase()
+        .split(|c: char| !c.is_alphanumeric())
+        .filter(|t| t.len() > 1 || t.chars().all(|c| c.is_ascii_digit()))
+        .map(str::to_string)
+        .collect()
+}
+
+/// Wie gut passt ein Treffer (`candidate`) zum gesuchten Gerätenamen? 0.0 – 1.0.
+///
+/// Modellbezeichnungen (Wörter mit Ziffern, z. B. „WH-1000XM5“ → „1000xm5“, „S94“) müssen
+/// **alle** im Treffer vorkommen, sonst ist es ein anderes Gerät (z. B. S93 statt S94) und das
+/// Ergebnis ist 0. Ansonsten zählt der Anteil der gefundenen übrigen Wörter.
+pub fn name_match(wanted: &str, candidate: &str) -> f64 {
+    let cand = name_tokens(candidate);
+    let cand_joined: String = cand.concat();
+    let wanted: Vec<String> = name_tokens(wanted).into_iter().filter(|t| !FILLER.contains(&t.as_str())).collect();
+    if wanted.is_empty() || cand.is_empty() {
+        return 0.0;
+    }
+    let (models, words): (Vec<&String>, Vec<&String>) = wanted.iter().partition(|t| t.chars().any(|c| c.is_ascii_digit()));
+    // Modellnummer: als eigenes Wort oder zusammengeschrieben („WH-1000XM5“ vs. „WH1000XM5“)
+    // (kurze Angaben wie „3“ nur als eigenes Wort, sonst passt „3“ auch zu „2023“)
+    if !models.iter().all(|m| cand.iter().any(|c| c == *m) || (m.len() >= 4 && cand_joined.contains(m.as_str()))) {
+        return 0.0;
+    }
+    // Zubehör (Hülle für …) ist nicht das Gerät selbst
+    let accessory = cand.iter().any(|c| ACCESSORY.contains(&c.as_str())) && !wanted.iter().any(|w| ACCESSORY.contains(&w.as_str()));
+    let penalty = if accessory { 0.5 } else { 0.0 };
+    if words.is_empty() {
+        return 1.0 - penalty;
+    }
+    let found = words.iter().filter(|w| cand.iter().any(|c| c == **w || (w.len() >= 5 && c.starts_with(w.as_str())))).count();
+    let ratio = found as f64 / words.len() as f64;
+    // Mit Modellnummer reicht ein Teil der Wörter (Händler formulieren Titel unterschiedlich)
+    (if models.is_empty() { ratio } else { 0.5 + ratio / 2.0 }) - penalty
+}
+
+const ACCESSORY: &[&str] = &[
+    "hülle", "huelle", "case", "cover", "tasche", "schutzfolie", "panzerglas", "folie", "ladekabel", "kabel", "adapter",
+    "halterung", "ersatz", "ersatzteil", "ohrpolster", "fernbedienung", "wandhalterung", "ständer", "zubehör",
+];
+
+/// Mindestwert von [`name_match`], ab dem ein Treffer als dasselbe Gerät gilt.
+pub const NAME_MATCH_MIN: f64 = 0.6;
+
+/// Bester passender Treffer: (Index, Wert) oder `None`, wenn keiner gut genug passt.
+pub fn best_name_match<'a>(wanted: &str, titles: impl IntoIterator<Item = &'a str>) -> Option<(usize, f64)> {
+    titles
+        .into_iter()
+        .enumerate()
+        .map(|(i, t)| (i, name_match(wanted, t)))
+        .filter(|(_, s)| *s >= NAME_MATCH_MIN)
+        .fold(None, |best: Option<(usize, f64)>, cur| match best {
+            Some(b) if b.1 >= cur.1 => Some(b),
+            _ => Some(cur),
+        })
+}
+
+/// Suchbegriffe für die Namenssuche eines Geräts: der Gerätename und – falls abweichend – der von
+/// einem anderen Shop erkannte Produkttitel (ohne den Shop `exclude`).
+pub fn name_terms(watch: &crate::storage::Watch, exclude: &str) -> Vec<String> {
+    let mut terms: Vec<String> = vec![];
+    let mut push = |t: &str| {
+        let t = t.split_whitespace().collect::<Vec<_>>().join(" ");
+        if t.len() >= 3 && !terms.iter().any(|x| x.eq_ignore_ascii_case(&t)) {
+            terms.push(t);
+        }
+    };
+    push(&watch.name);
+    for (shop, result) in &watch.results {
+        if shop != exclude && result.error.is_none() && !result.title.is_empty() {
+            push(&result.title);
+        }
+    }
+    terms.truncate(2);
+    terms
+}
+
+#[cfg(test)]
+mod name_tests {
+    use super::*;
+
+    #[test]
+    fn matches_model_numbers_strictly() {
+        assert!(name_match("Sony WH-1000XM5", "Sony WH-1000XM5 Kabellose Kopfhörer, Schwarz") >= NAME_MATCH_MIN);
+        assert!(name_match("Sony WH-1000XM5", "Sony WH1000XM5 Bluetooth Kopfhörer") >= NAME_MATCH_MIN);
+        assert_eq!(name_match("Sony WH-1000XM5", "Sony WH-1000XM4 Kopfhörer"), 0.0);
+        assert_eq!(name_match("Samsung GQ65S94F", "Samsung GQ65S93F OLED"), 0.0);
+        assert!(name_match("Apple AirPods Pro 3", "Apple AirPods Pro 3 mit USB-C") >= NAME_MATCH_MIN);
+        assert!(name_match("Apple AirPods Pro", "Apple iPhone Hülle") < NAME_MATCH_MIN);
+        assert_eq!(name_match("", "irgendwas"), 0.0);
+        assert_eq!(name_match("Apple AirPods Pro 3", "Apple AirPods Pro 2 (2023)"), 0.0);
+        assert!(name_match("Sony WH-1000XM5", "Hülle für Sony WH-1000XM5") < NAME_MATCH_MIN);
+    }
+
+    #[test]
+    fn picks_best_title() {
+        let titles = ["Sony WH-1000XM4", "Sony WH-1000XM5 Schwarz", "Hülle für Sony WH-1000XM5"];
+        assert_eq!(best_name_match("Sony WH-1000XM5 Schwarz", titles).map(|x| x.0), Some(1));
+        assert_eq!(best_name_match("Sony WH-1000XM5", ["Hülle für Sony WH-1000XM5", "Sony WH-1000XM5"]).map(|x| x.0), Some(1));
+        assert!(best_name_match("Bosch Akkuschrauber", titles).is_none());
+    }
+}

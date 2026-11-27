@@ -9,6 +9,7 @@ pub mod amazon;
 pub mod common;
 pub mod euronics;
 pub mod expert;
+pub mod idealo;
 
 use crate::activity::ScanReporter;
 use crate::model::{CheckError, Coords, Offer, ShopResult, StoreState};
@@ -113,10 +114,11 @@ pub trait Source: Send + Sync {
         }
     }
 
-    /// Soll dieses Gerät bei der Quelle geprüft werden? Ohne eigene Angabe wird über die EAN gesucht.
+    /// Soll dieses Gerät bei der Quelle geprüft werden? Ohne eigene Angabe wird über die EAN
+    /// und – wenn die nichts findet – über den Gerätenamen gesucht.
     fn is_active(&self, watch: &Watch) -> bool {
         let cfg = watch.source(self.id());
-        cfg.enabled && (!cfg.query.trim().is_empty() || !watch.ean.trim().is_empty())
+        cfg.enabled && (!cfg.query.trim().is_empty() || !watch.ean.trim().is_empty() || !watch.name.trim().is_empty())
     }
 
     /// Prüft ein Gerät und liefert Ergebnis und neuen Filialstatus.
@@ -174,6 +176,7 @@ pub fn all() -> &'static [Arc<dyn Source>] {
             Arc::new(expert::Expert::default()) as Arc<dyn Source>,
             euronics() as Arc<dyn Source>,
             Arc::new(amazon::Amazon::default()),
+            Arc::new(idealo::Idealo::default()),
         ]
     })
 }

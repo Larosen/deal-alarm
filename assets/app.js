@@ -355,7 +355,9 @@ function applyArticle(article) {
     $('[data-field="query"]', set).value = query;
     if (query) $('[data-field="enabled"]', set).checked = true;
     if (found) status.push(`${src.label}: gefunden ✔`);
-    else if (article.ean && $('[data-field="enabled"]', set).checked) status.push(`${src.label}: wird über die EAN gesucht`);
+    else if ($('[data-field="enabled"]', set).checked) {
+      status.push(`${src.label}: wird über ${article.ean ? "die EAN (sonst den Namen)" : "den Namen"} gesucht`);
+    }
   }
   $("#article-status").textContent = status.join(" · ");
   $("#article-results").classList.add("hidden");
@@ -374,8 +376,10 @@ async function searchArticle() {
     list.replaceChildren();
     list.classList.remove("hidden");
     if (!res.results.length) {
-      list.innerHTML = "<li>Keine Treffer – füge eine Shop-URL oder die EAN ein</li>";
-      return;
+      const li = document.createElement("li");
+      li.className = "muted";
+      li.textContent = "Keine Treffer bei expert – füge eine Shop-URL oder die EAN ein oder beobachte per Namenssuche:";
+      list.append(li);
     }
     for (const hit of res.results) {
       const li = document.createElement("li");
@@ -384,6 +388,11 @@ async function searchArticle() {
         queries: { [hit.source]: hit.query }, found: { [hit.source]: true } }));
       list.append(li);
     }
+    // Immer möglich: nur über den Namen in allen Shops suchen lassen
+    const byName = document.createElement("li");
+    byName.textContent = `🔎 „${q}“ per Namenssuche in allen Shops beobachten`;
+    byName.addEventListener("click", () => applyArticle({ title: q, ean: "", queries: {}, found: {} }));
+    list.append(byName);
   } catch (e) { $("#article-status").textContent = e.message; }
 }
 $("#btn-article-search").addEventListener("click", searchArticle);
