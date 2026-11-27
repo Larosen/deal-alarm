@@ -31,7 +31,7 @@ und durchsucht auf Wunsch alle expert-Filialen inkl. Direktabzug/Aktionspreis un
   übereinstimmt (z. B. `WH-1000XM6`, nicht `WH-1000XM4`; Zubehör wie Hüllen wird aussortiert). Ein Gerät kann auch ganz
   ohne EAN nur über den Namen beobachtet werden („per Namenssuche in allen Shops beobachten“ in der Suche).
 - **idealo** (Preisvergleich): Bestpreis über alle Händler – idealo-URL oder automatisch über EAN/Gerätename,
-  eine Anfrage pro Prüfung. Bei bestehenden Geräten ist idealo zunächst aus und lässt sich pro Gerät aktivieren.
+  eine Anfrage pro Prüfung. Bei bestehenden Geräten wird idealo beim ersten Start einmalig eingeschaltet.
 - **Amazon** (amazon.de): ASIN, Produkt-URL oder Suche über die EAN, sonst über den Namen
   - **Amazon Warehouse** (Gebrauchtware) mit Mindestzustand (*Wie neu*, *Sehr gut*, *Gut*, *Akzeptabel*)
   - Neuware von Amazon, optional auch von Drittanbietern
