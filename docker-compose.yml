@@ -13,3 +13,5 @@ services:
       # TRUSTED_PROXIES: private
       # Optionaler Passwortschutz der Weboberfläche (Benutzer: admin)
       # UI_PASSWORD: geheim
+      # Diagnosemodus: Shop-Antworten unter ./data/debug speichern (zur Fehlersuche)
+      # DEBUG_CAPTURE: "1"

@@ -21,12 +21,13 @@
 //! (Standard 4 Anfragen/Minute) und ein Captcha wird wie eine Drosselung behandelt.
 
 use super::common::{best_name_match, http_client_with_cookies, name_match, name_terms, NAME_MATCH_MIN};
-use super::{Identity, OptionDef, ResolveError, Source};
+use super::{Confidence, Identity, Located, OptionDef, ResolveError, Source};
 use crate::model::{CheckError, Coords, Offer, ShopResult, StoreEntry, StoreState};
 use crate::ratelimit::{self, AdaptiveLimiter};
 use crate::scan;
 use crate::storage::{Settings, Watch};
-use crate::util::{format_price, now_iso, parse_price};
+use crate::util::{age_hours, format_price, now_iso, parse_price};
+use super::REDISCOVER_HOURS;
 use async_trait::async_trait;
 use regex::Regex;
 use scraper::{ElementRef, Html, Selector};
@@ -288,9 +289,11 @@ impl Amazon {
         if matches!(response.status().as_u16(), 404 | 410) {
             return Ok(None);
         }
+        let status = response.status().as_u16();
         let response = response.error_for_status()?;
         let final_url = response.url().to_string();
         let body = response.text().await?;
+        crate::debug::capture("amazon", &final_url, status, &body);
         if is_blocked(&body) {
             limiter.throttled(None);
             return Err(blocked());
@@ -306,9 +309,24 @@ impl Amazon {
 
     /// ASIN aus URL/ASIN, sonst per Suche: erst EAN bzw. eigener Suchbegriff, dann Gerätename.
     async fn resolve_asin(&self, watch: &Watch, limiter: &AdaptiveLimiter, state: &StoreState) -> Result<String, CheckError> {
+        self.find_asin(watch, limiter, state).await.map(|(asin, _, _)| asin)
+    }
+
+    /// Gilt die gemerkte Zuordnung aus der letzten Suche noch?
+    fn cached(watch: &Watch, state: &StoreState) -> bool {
+        let query = watch.source("amazon").query.trim().to_string();
+        let term = if query.is_empty() { watch.ean.trim().to_string() } else { query };
+        state.meta_str("asin").is_some()
+            && state.meta_str("search_term") == Some(term.as_str())
+            && state.meta_str("search_name") == Some(watch.name.trim())
+            && state.meta_str("resolved_at").is_none_or(|t| age_hours(t) < REDISCOVER_HOURS)
+    }
+
+    /// Wie [`Self::resolve_asin`], zusätzlich mit Sicherheit der Zuordnung und Titel aus der Suche.
+    async fn find_asin(&self, watch: &Watch, limiter: &AdaptiveLimiter, state: &StoreState) -> Result<(String, Confidence, String), CheckError> {
         let query = watch.source("amazon").query.trim().to_string();
         if let Some(asin) = extract_asin(&query) {
-            return Ok(asin);
+            return Ok((asin, Confidence::Ean, String::new()));
         }
         let ean = watch.ean.trim().to_string();
         let term = if query.is_empty() { ean.clone() } else { query.clone() };
@@ -316,17 +334,22 @@ impl Amazon {
         if term.is_empty() && names.is_empty() {
             return Err(CheckError::Other("Keine Amazon-URL, ASIN, EAN oder Gerätename hinterlegt".into()));
         }
-        if state.meta_str("search_term") == Some(term.as_str()) && state.meta_str("search_name") == Some(watch.name.trim()) {
+        if Self::cached(watch, state) {
             if let Some(asin) = state.meta_str("asin") {
-                return Ok(asin.to_string());
+                return Ok((asin.to_string(), Confidence::Ean, String::new()));
             }
         }
         if !term.is_empty() {
             let results = self.search(limiter, &term).await?;
             // Eigener Suchbegriff: erster Treffer; EAN: erster Treffer, wenn er zum Namen passt
-            let picked = if query.is_empty() { pick_ean_result(&results, &watch.name) } else { results.iter().find(|r| !r.sponsored).or(results.first()).map(|r| r.asin.clone()) };
+            let picked = if query.is_empty() {
+                pick_ean_result(&results, &watch.name)
+            } else {
+                results.iter().find(|r| !r.sponsored).or(results.first()).map(|r| r.asin.clone())
+            };
             if let Some(asin) = picked {
-                return Ok(asin);
+                let title = results.iter().find(|r| r.asin == asin).map(|r| r.title.clone()).unwrap_or_default();
+                return Ok((asin, Confidence::Ean, title));
             }
             if !query.is_empty() {
                 return Err(CheckError::lookup(format!("Bei Amazon nicht gefunden (Suche nach „{term}“ ohne Treffer)")));
@@ -340,7 +363,7 @@ impl Amazon {
             let results = self.search(limiter, &name).await?;
             if let Some((asin, title)) = pick_name_result(&results, &name) {
                 crate::info!("Amazon · {}: über Namenssuche „{name}“ gefunden: {title} ({asin})", watch.name);
-                return Ok(asin);
+                return Ok((asin, Confidence::Name, title));
             }
             tried.push(name);
         }
@@ -404,6 +427,15 @@ impl Source for Amazon {
         Ok(Identity { title, ean: String::new(), query: format!("{}/dp/{asin}", self.base) })
     }
 
+    async fn locate(&self, watch: &Watch, settings: &Settings) -> Result<Option<Located>, String> {
+        let limiter = self.limiter(settings.amazon_rate_per_min);
+        match self.find_asin(watch, &limiter, &StoreState::default()).await {
+            Ok((asin, confidence, title)) => Ok(Some(Located { query: format!("{BASE}/dp/{asin}"), title, confidence })),
+            Err(CheckError::Lookup { .. }) => Ok(None),
+            Err(e) => Err(e.message().to_string()),
+        }
+    }
+
     fn filter_offers(&self, offers: Vec<Offer>, watch: &Watch, _settings: &Settings, _user_coords: Option<Coords>) -> Vec<Offer> {
         let cfg = watch.source("amazon");
         let (new, marketplace, warehouse) = (cfg.opt_bool("include_new", true), cfg.opt_bool("include_marketplace", false), cfg.opt_bool("include_warehouse", true));
@@ -428,6 +460,7 @@ impl Source for Amazon {
     ) -> Result<(ShopResult, StoreState), CheckError> {
         let limiter = self.limiter(settings.amazon_rate_per_min);
         limiter.start_scan();
+        let from_cache = Self::cached(watch, &state);
         let asin = self.resolve_asin(watch, &limiter, &state).await?;
         let state = if state.meta_str("asin") != Some(asin.as_str()) { StoreState::default() } else { state };
         crate::info!("Amazon · {}: ASIN {asin}, Tempo {} Anfragen/Min.", watch.name, settings.amazon_rate_per_min);
@@ -473,6 +506,9 @@ impl Source for Amazon {
             new_state.meta.insert("search_term".into(), json!(watch.ean.trim()));
         }
         new_state.meta.insert("search_name".into(), json!(watch.name.trim()));
+        // Zeitpunkt der Zuordnung bleibt, solange dieselbe ASIN gilt (danach wird neu gesucht)
+        let resolved_at = new_state.meta_str("resolved_at").filter(|_| from_cache).map(str::to_string).unwrap_or_else(now_iso);
+        new_state.meta.insert("resolved_at".into(), json!(resolved_at));
 
         let fresh = scan::fresh_offers(&new_state, f64::INFINITY);
         let matching = self.filter_offers(fresh, watch, settings, None);
@@ -714,7 +750,12 @@ mod tests {
         w.ean = String::new();
         let (_, state) = amazon.check(&w, &settings(), StoreState::default(), &mut reporter).await.unwrap();
         assert_eq!(state.meta_str("asin"), Some("B0DEMO1234"));
+        // Zuordnung beim Anlegen: per Name gefunden
+        let hit = amazon.locate(&w, &settings()).await.unwrap().unwrap();
+        assert_eq!((hit.confidence, hit.query.ends_with("/dp/B0DEMO1234")), (Confidence::Name, true));
+        assert!(hit.title.contains("WH-1000XM6"));
         w.name = "Unbekanntes Gerät XY99".into();
+        assert!(amazon.locate(&w, &settings()).await.unwrap().is_none());
         let err = amazon.check(&w, &settings(), StoreState::default(), &mut reporter).await.unwrap_err();
         assert!(matches!(err, CheckError::Lookup { .. }) && err.message().contains("XY99"), "{err:?}");
     }

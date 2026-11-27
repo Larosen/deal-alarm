@@ -1,7 +1,7 @@
 //! Preisabfrage bei expert – basierend auf expert-checker reborn (MyDealz @Barney & @Gorex).
 
 use super::common::{best_name_match, http_client, name_terms, plz_coordinates};
-use super::{Hit, Identity, OptionDef, ResolveError, Source};
+use super::{Confidence, Hit, Identity, Located, OptionDef, ResolveError, Source};
 use crate::model::{CheckError, Coords, Offer, ShopResult, StoreState};
 use crate::ratelimit::{self, AdaptiveLimiter};
 use crate::scan::{self, FetchError, Scannable};
@@ -186,6 +186,14 @@ impl Expert {
         }
     }
 
+    /// JSON lesen (im Diagnosemodus wird die Antwort zusätzlich gespeichert).
+    async fn json_body(response: reqwest::Response) -> Result<Value, String> {
+        let (url, status) = (response.url().to_string(), response.status().as_u16());
+        let text = response.text().await.map_err(|e| e.to_string())?;
+        crate::debug::capture("expert", &url, status, &text);
+        serde_json::from_str(&text).map_err(|e| e.to_string())
+    }
+
     pub async fn search_articles(&self, term: &str) -> Result<Vec<Article>, String> {
         let response = self
             .client
@@ -197,7 +205,7 @@ impl Expert {
             .map_err(|e| e.to_string())?
             .error_for_status()
             .map_err(|e| e.to_string())?;
-        let data: Value = response.json().await.map_err(|e| e.to_string())?;
+        let data: Value = Self::json_body(response).await?;
         Ok(data["articleSuggest"]
             .as_array()
             .map(|list| list.iter().map(|entry| article_info(&entry["article"])).collect())
@@ -216,7 +224,7 @@ impl Expert {
         if response.status() == 204 {
             return Ok(None);
         }
-        let data: Value = response.error_for_status().map_err(|e| e.to_string())?.json().await.map_err(|e| e.to_string())?;
+        let data: Value = Self::json_body(response.error_for_status().map_err(|e| e.to_string())?).await?;
         let article = article_info(&data);
         Ok((!article.webcode.is_empty()).then_some(article))
     }
@@ -414,6 +422,20 @@ impl Source for Expert {
 
     async fn lookup_ean(&self, ean: &str) -> Result<Option<Identity>, String> {
         Ok(self.find_by_ean(ean).await?.map(|p| Identity { title: p.title, ean: p.ean, query: p.url }))
+    }
+
+    async fn locate(&self, watch: &Watch, _settings: &Settings) -> Result<Option<Located>, String> {
+        if !watch.ean.trim().is_empty() {
+            if let Some(p) = self.find_by_ean(watch.ean.trim()).await? {
+                return Ok(Some(Located { query: p.url, title: p.title, confidence: Confidence::Ean }));
+            }
+        }
+        for name in name_terms(watch, "expert") {
+            if let Some(p) = self.find_by_name(&name).await? {
+                return Ok(Some(Located { query: p.url, title: p.title, confidence: Confidence::Name }));
+            }
+        }
+        Ok(None)
     }
 
     async fn search(&self, term: &str) -> Option<Result<Vec<Hit>, String>> {

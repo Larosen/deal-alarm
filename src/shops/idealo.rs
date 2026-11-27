@@ -10,11 +10,11 @@
 
 use super::common::{best_name_match, http_client_with_cookies, name_terms};
 use super::euronics::{parse_product_page, same_ean};
-use super::{Identity, OptionDef, ResolveError, Source};
+use super::{Confidence, Identity, Located, OptionDef, ResolveError, Source};
 use crate::model::{CheckError, Offer, ShopResult, StoreEntry, StoreState};
 use crate::ratelimit::{self, AdaptiveLimiter};
 use crate::storage::{Settings, Watch};
-use crate::util::{format_price, now_iso};
+use crate::util::{age_hours, format_price, now_iso};
 use async_trait::async_trait;
 use regex::Regex;
 use serde_json::json;
@@ -120,9 +120,12 @@ impl Idealo {
         if matches!(response.status().as_u16(), 404 | 410) {
             return Ok(None);
         }
+        let status = response.status().as_u16();
         let response = response.error_for_status()?;
         let final_url = response.url().to_string();
-        Ok(Some((response.text().await?, final_url)))
+        let body = response.text().await?;
+        crate::debug::capture("idealo", &final_url, status, &body);
+        Ok(Some((body, final_url)))
     }
 
     /// Suche bei idealo: führt sie direkt auf eine Produktseite, ist das der einzige Treffer.
@@ -138,9 +141,13 @@ impl Idealo {
 
     /// Produkt-URL: hinterlegt, sonst über EAN-Suche, sonst über Namenssuche.
     async fn resolve_url(&self, watch: &Watch, limiter: &AdaptiveLimiter, state: &StoreState) -> Result<String, CheckError> {
+        self.find_url(watch, limiter, state).await.map(|(url, _)| url)
+    }
+
+    async fn find_url(&self, watch: &Watch, limiter: &AdaptiveLimiter, state: &StoreState) -> Result<(String, Confidence), CheckError> {
         let query = watch.source("idealo").query.trim().to_string();
         if query.contains("idealo.") && is_product_page(&query) {
-            return Ok(self.rebase(&query));
+            return Ok((self.rebase(&query), Confidence::Ean));
         }
         let ean = watch.ean.trim().to_string();
         let term = if query.is_empty() { ean.clone() } else { query.clone() };
@@ -149,9 +156,9 @@ impl Idealo {
             return Err(CheckError::Other("Keine idealo-URL, EAN oder Gerätename hinterlegt".into()));
         }
         let key = format!("{term}|{}", watch.name.trim());
-        if state.meta_str("search_key") == Some(key.as_str()) {
+        if state.meta_str("search_key") == Some(key.as_str()) && state.meta_str("resolved_at").is_none_or(|t| age_hours(t) < super::REDISCOVER_HOURS) {
             if let Some(url) = state.meta_str("product_url") {
-                return Ok(url.to_string());
+                return Ok((url.to_string(), Confidence::Ean));
             }
         }
         let mut tried = vec![];
@@ -165,14 +172,14 @@ impl Idealo {
                 hits.iter().find(|(_, t)| watch.name.trim().is_empty() || super::common::name_match(&watch.name, t) > 0.0).or(hits.first())
             };
             if let Some((url, _)) = pick {
-                return Ok(url.clone());
+                return Ok((url.clone(), Confidence::Ean));
             }
         }
         for name in names {
             let hits = self.search(limiter, &name).await?;
             if let Some((i, _)) = best_name_match(&name, hits.iter().map(|(_, t)| t.as_str())) {
                 crate::info!("idealo · {}: über Namenssuche „{name}“ gefunden: {}", watch.name, hits[i].1);
-                return Ok(hits[i].0.clone());
+                return Ok((hits[i].0.clone(), Confidence::Name));
             }
             tried.push(name);
         }
@@ -220,6 +227,15 @@ impl Source for Idealo {
         Ok(Identity { title, ean: product.map(|p| p.ean).unwrap_or_default(), query: url })
     }
 
+    async fn locate(&self, watch: &Watch, settings: &Settings) -> Result<Option<Located>, String> {
+        let limiter = self.limiter(settings.idealo_rate_per_min);
+        match self.find_url(watch, &limiter, &StoreState::default()).await {
+            Ok((url, confidence)) => Ok(Some(Located { title: title_from_url(&url), query: url, confidence })),
+            Err(CheckError::Lookup { .. }) => Ok(None),
+            Err(e) => Err(e.message().to_string()),
+        }
+    }
+
     async fn check(
         &self,
         watch: &Watch,
@@ -229,6 +245,12 @@ impl Source for Idealo {
     ) -> Result<(ShopResult, StoreState), CheckError> {
         let limiter = self.limiter(settings.idealo_rate_per_min);
         limiter.start_scan();
+        let key = |w: &Watch| {
+            let q = w.source("idealo").query.trim().to_string();
+            format!("{}|{}", if q.is_empty() { w.ean.trim().to_string() } else { q }, w.name.trim())
+        };
+        let from_cache = state.meta_str("search_key") == Some(key(watch).as_str())
+            && state.meta_str("resolved_at").is_some_and(|t| age_hours(t) < super::REDISCOVER_HOURS);
         let url = self.resolve_url(watch, &limiter, &state).await?;
         crate::info!("idealo · {}: {url}", watch.name);
         let (page, final_url) = self
@@ -266,6 +288,8 @@ impl Source for Idealo {
         let query = watch.source("idealo").query.trim().to_string();
         let term = if query.is_empty() { watch.ean.trim().to_string() } else { query };
         new_state.meta.insert("search_key".into(), json!(format!("{term}|{}", watch.name.trim())));
+        let resolved_at = state.meta_str("resolved_at").filter(|_| from_cache && state.meta_str("product_url") == Some(url.as_str())).map(str::to_string).unwrap_or_else(now_iso);
+        new_state.meta.insert("resolved_at".into(), json!(resolved_at));
 
         let stats = crate::model::Stats { planned: 1, checked: 1, offers: offer.is_some() as usize, total: 1, known: 1, ..Default::default() };
         progress.report(&stats, &new_state, offer.as_ref());
@@ -362,6 +386,8 @@ mod tests {
         assert!(result.detail.contains("37 Angebote"), "{}", result.detail);
         assert!(result.url.contains("OffersOfProduct/2_"));
         assert_eq!(state.stores[STORE_ID].offer.as_ref().unwrap().total_price, 289.9);
+        let hit = idealo.locate(&w, &settings()).await.unwrap().unwrap();
+        assert_eq!(hit.confidence, Confidence::Name);
         // Ergebnis der Suche wird gemerkt
         assert!(state.meta_str("search_key").unwrap().starts_with("4548736146000|"));
     }

@@ -41,6 +41,13 @@ und durchsucht auf Wunsch alle expert-Filialen inkl. Direktabzug/Aktionspreis un
 - ntfy mit eigenem Server, Topic, optionalem Access-Token und Priorität; Testnachricht-Button
 - Kein Benachrichtigungs-Spam: Pro Gerät und Shop gibt es einen Alarm, wenn der Wunschpreis erreicht wird.
   Ein weiterer kommt erst, wenn der Preis nochmals fällt oder zwischenzeitlich wieder über dem Wunschpreis lag.
+- **Ein Link, alle Shops:** Beim Anlegen sucht der Deal-Alarm das Gerät gleichzeitig in allen Shops und zeigt, was er
+  gefunden hat – ✔ bei gleicher EAN bzw. passender Modellnummer (wird fest zugeordnet), ⚠ bei einem ähnlichen Gerät
+  (Händler-Variante, z. B. Samsung S93 statt S94), das man mit einem Klick übernehmen kann.
+- **Neu suchen nach einer Woche:** Per Suche gefundene Zuordnungen werden wöchentlich erneuert, damit neue Angebote
+  gefunden werden. Eingetragene Produkt-URLs bleiben fest.
+- **Störungsmeldung:** Schlagen bei einem Shop 3 Prüfungen in Folge fehl (Seite nicht lesbar – meist ein geänderter
+  Seitenaufbau), kommt einmalig eine ntfy-Nachricht. Drosselungen und „nicht gefunden“ zählen nicht.
 - Optionaler Passwortschutz (HTTP Basic Auth) über `UI_PASSWORD`, mit Sperre nach wiederholten Fehlversuchen
   (10 innerhalb von 15 Minuten sperren die IP für 15 Minuten)
 - **Protokoll und Fortschritt:** Jeder Shop hat eine eigene Warteschlange – expert wartet nicht auf den
@@ -114,6 +121,7 @@ cargo run --release
 | `UI_PASSWORD` | – | Aktiviert Basic Auth (Benutzer `UI_USER`, Standard `admin`) |
 | `TRUSTED_PROXIES` | – | Reverse-Proxys, deren `X-Forwarded-For` ausgewertet wird: IPs, Netze (CIDR) oder `private` |
 | `LOG_LEVEL` | `INFO` | Log-Level (`DEBUG`, `INFO`, `WARNING`, `ERROR`) |
+| `DEBUG_CAPTURE` | – | `1` = Diagnosemodus: speichert die Antworten der Shops unter `DATA_DIR/debug/<shop>/` (je Shop die neuesten 200) |
 
 ## Hinter einem Reverse-Proxy (z. B. Pangolin)
 
@@ -184,6 +192,15 @@ cargo test
 Die Quellen liegen in `src/shops/`, die Weboberfläche in `assets/`. Ein bestehender `state.json` aus der
 Python-Version wird beim ersten Start automatisch ins neue Format übernommen (Geräte, Preise, Verlauf und
 Einstellungen bleiben erhalten; Amazon ist dort zunächst aus und lässt sich pro Gerät aktivieren).
+
+### Diagnosemodus und echte Testdaten
+
+Die Shops blocken Rechenzentrums-IPs; getestet wird deshalb gegen gespeicherte echte Seiten:
+
+1. Deal-Alarm zuhause mit `DEBUG_CAPTURE=1` starten und ein Gerät prüfen.
+2. Die Dateien aus `data/debug/<shop>/` nach `fixtures/<art>/` kopieren und eine `.json` mit dem erwarteten
+   Ergebnis daneben legen (Aufbau siehe `fixtures/README.md`).
+3. `cargo test` prüft alle Dateien automatisch – auch auf GitHub.
 
 ### Weitere Quellen hinzufügen
 

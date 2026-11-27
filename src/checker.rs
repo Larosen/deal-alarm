@@ -67,6 +67,31 @@ async fn notify_deal(
     .await
 }
 
+/// Nach so vielen Fehlern in Folge (über alle Geräte) gilt eine Quelle als gestört.
+pub const HEALTH_THRESHOLD: u32 = 3;
+
+/// Zustand je Quelle: (Fehler in Folge, Warnung schon verschickt)
+static HEALTH: std::sync::OnceLock<std::sync::Mutex<std::collections::HashMap<String, (u32, bool)>>> = std::sync::OnceLock::new();
+
+/// Merkt sich Erfolg/Fehler einer Quelle. Liefert `true`, wenn jetzt (einmalig) gewarnt werden soll.
+///
+/// Gezählt werden nur „echte“ Fehler (Seite nicht lesbar, unerwartete Antwort) – keine Drosselung
+/// und kein „Produkt nicht gefunden“. Ein Erfolg setzt den Zähler zurück.
+pub fn record_health(shop: &str, failed: bool) -> bool {
+    let mut map = HEALTH.get_or_init(Default::default).lock().unwrap();
+    let entry = map.entry(shop.to_string()).or_insert((0, false));
+    if !failed {
+        *entry = (0, false);
+        return false;
+    }
+    entry.0 += 1;
+    if entry.0 >= HEALTH_THRESHOLD && !entry.1 {
+        entry.1 = true;
+        return true;
+    }
+    false
+}
+
 /// Prüft ein Gerät bei einer Quelle, speichert das Ergebnis und löst ggf. den Dealalarm aus.
 pub async fn check_shop(
     storage: &Arc<Storage>,
@@ -87,8 +112,10 @@ pub async fn check_shop(
     crate::info!("{label} · {name}: Prüfung gestartet");
 
     let mut new_state: Option<StoreState> = None;
+    let mut health_error: Option<String> = None;
     let mut result = match source.check(&watch, settings, store_state, &mut reporter).await {
         Ok((result, state)) => {
+            record_health(shop, false);
             new_state = Some(state);
             result
         }
@@ -101,10 +128,30 @@ pub async fn check_shop(
         Err(error) => {
             // einzelne Shopfehler sollen den Lauf nicht abbrechen; bisher Gesammeltes bleibt erhalten
             crate::warn!("{label} · {name}: Fehler – {error}");
+            if matches!(error, CheckError::Other(_)) && record_health(shop, true) {
+                health_error = Some(error.message().to_string());
+            }
             ShopResult::error(error.message())
         }
     };
     result.checked_at = now_iso();
+
+    if let Some(error) = health_error {
+        let message = format!(
+            "Die letzten {HEALTH_THRESHOLD} Prüfungen bei {label} sind fehlgeschlagen. Vermutlich hat {label} den Seitenaufbau \
+             geändert. Letzter Fehler: {error}\nTipp: Mit DEBUG_CAPTURE=1 speichert der Deal-Alarm die Antworten zur Analyse."
+        );
+        let sent = notifier::send(
+            client,
+            settings,
+            notifier::Message { title: &format!("Deal-Alarm: {label} gestört"), message: &message, click: None, tags: &["warning"] },
+        )
+        .await;
+        match sent {
+            Ok(_) => crate::warn!("{label}: Störungsmeldung per ntfy verschickt"),
+            Err(e) => crate::error!("{label}: Störungsmeldung nicht verschickt – {e}"),
+        }
+    }
 
     if !result.ean.is_empty() && watch.ean.is_empty() {
         watch.ean = result.ean.clone();
@@ -466,6 +513,16 @@ mod tests {
         fn filter_offers(&self, offers: Vec<Offer>, _: &Watch, _: &Settings, _: Option<crate::model::Coords>) -> Vec<Offer> {
             offers
         }
+    }
+
+    #[test]
+    fn health_warns_once_after_repeated_failures() {
+        let shop = "health-test";
+        assert!(!record_health(shop, true) && !record_health(shop, true));
+        assert!(record_health(shop, true)); // dritter Fehler: warnen
+        assert!(!record_health(shop, true)); // nur einmal
+        assert!(!record_health(shop, false)); // Erfolg setzt zurück
+        assert!(!record_health(shop, true) && !record_health(shop, true) && record_health(shop, true));
     }
 
     #[tokio::test]

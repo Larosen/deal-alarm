@@ -11,12 +11,12 @@
 //! Der Preis wird aus den strukturierten Produktdaten (schema.org) der Seite gelesen.
 
 use super::common::{best_name_match, http_client, name_match, name_terms, plz_coordinates};
-use super::{Identity, OptionDef, ResolveError, Source};
+use super::{Confidence, Identity, Located, OptionDef, ResolveError, Source};
 use crate::model::{CheckError, Coords, Offer, ShopResult, StoreState, Suggestion};
 use crate::ratelimit::{self, AdaptiveLimiter};
 use crate::scan::{self, FetchError, Scannable};
 use crate::storage::{Settings, Watch};
-use crate::util::{haversine_km, parse_price, parse_price_value};
+use crate::util::{age_hours, haversine_km, now_iso, parse_price, parse_price_value};
 use async_trait::async_trait;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
@@ -469,9 +469,12 @@ impl Euronics {
         if allow_missing && matches!(response.status().as_u16(), 404 | 410) {
             return Ok(None);
         }
+        let status = response.status().as_u16();
         let response = response.error_for_status()?;
         let final_url = response.url().to_string();
-        Ok(Some((response.text().await?, final_url)))
+        let body = response.text().await?;
+        crate::debug::capture("euronics", &final_url, status, &body);
+        Ok(Some((body, final_url)))
     }
 
     async fn download_directory(&self) -> Result<Directory, String> {
@@ -605,7 +608,7 @@ impl Euronics {
         if term.is_empty() && names.is_empty() {
             return Err(CheckError::Other("Keine Euronics-URL, EAN oder Gerätename hinterlegt".into()));
         }
-        if state.meta_str("query") == Some(Self::cache_key(watch).as_str()) {
+        if Self::cached(watch, state) {
             if let Some(path) = state.meta_str("product_path") {
                 return Ok(path.to_string());
             }
@@ -688,6 +691,13 @@ impl Euronics {
         })
     }
 
+    /// Gilt die gemerkte Zuordnung aus der letzten Suche noch (gleiche Angaben, jünger als eine Woche)?
+    fn cached(watch: &Watch, state: &StoreState) -> bool {
+        state.meta_str("product_path").is_some()
+            && state.meta_str("query") == Some(Self::cache_key(watch).as_str())
+            && state.meta_str("resolved_at").is_none_or(|t| age_hours(t) < super::REDISCOVER_HOURS)
+    }
+
     /// Wonach gesucht wurde – ändert sich das, wird neu gesucht.
     fn cache_key(watch: &Watch) -> String {
         let q = watch.source("euronics").query.trim().to_string();
@@ -739,6 +749,26 @@ impl Source for Euronics {
         None
     }
 
+    async fn locate(&self, watch: &Watch, settings: &Settings) -> Result<Option<Located>, String> {
+        let stores = parse_store_list(&settings.euronics_stores);
+        match self.resolve_path(watch, settings, &stores, &StoreState::default()).await {
+            Ok(path) => {
+                let same = same_ean(&ean_from_path(&path), watch.ean.trim());
+                Ok(Some(Located {
+                    query: format!("{BASE}/{path}"),
+                    title: title_from_path(&path),
+                    confidence: if same { Confidence::Ean } else { Confidence::Name },
+                }))
+            }
+            Err(CheckError::Lookup { suggestion: Some(s), .. }) => {
+                let path = product_path(&s.url, &stores);
+                Ok(Some(Located { query: format!("{BASE}/{path}"), title: s.title, confidence: Confidence::Variant }))
+            }
+            Err(CheckError::Lookup { .. }) => Ok(None),
+            Err(e) => Err(e.message().to_string()),
+        }
+    }
+
     async fn check(
         &self,
         watch: &Watch,
@@ -748,6 +778,7 @@ impl Source for Euronics {
     ) -> Result<(ShopResult, StoreState), CheckError> {
         let cfg = watch.source("euronics");
         let markets = self.select_markets(cfg.opt_bool("all_stores", true), cfg.opt_f64("max_distance", 0.0), settings).await;
+        let from_cache = Self::cached(watch, &state);
         let path = self.resolve_path(watch, settings, &markets, &state).await?;
         crate::info!(
             "Euronics · {}: Produkt {}/{path}, {} Märkte + Onlineshop, Tempo {} Anfragen/Min. je Domain",
@@ -832,6 +863,8 @@ impl Source for Euronics {
             ..Default::default()
         };
         let query = Self::cache_key(watch);
+        let resolved_at = state.meta_str("resolved_at").filter(|_| from_cache).map(str::to_string).unwrap_or_else(now_iso);
+        state.meta.insert("resolved_at".into(), json!(resolved_at));
         state.meta.insert("product_path".into(), json!(path));
         state.meta.insert("title".into(), json!(title));
         state.meta.insert("query".into(), json!(query));
@@ -1046,6 +1079,38 @@ mod tests {
         watch.name = "Sony WH-1000XM5".into();
         let err = euronics.check(&watch, &settings(), StoreState::default(), &mut reporter).await.unwrap_err();
         assert!(matches!(err, CheckError::Lookup { suggestion: None, .. }), "{err:?}");
+    }
+
+    #[tokio::test]
+    async fn locate_reports_confidence_and_rediscovers_after_a_week() {
+        let router = Router::new()
+            .route("/search", get(|Query(q): Query<HashMap<String, String>>| async move {
+                axum::response::Html(match q["sSearch"].as_str() {
+                    "0195950543742" => r#"<a href="/audio/airpods-pro-3-0195950543742">a</a>"#.to_string(),
+                    _ => jsonld_page(json!({"@type": "ItemList", "itemListElement": [{"url": "/tv/samsung-gq65s93f-8806095123456"}]})),
+                })
+            }))
+            .route("/audio/airpods-pro-3-0195950543742", get(|| async { axum::response::Html(product_html("AirPods Pro 3", "219.00")) }));
+        let euronics = Euronics::new(&serve(router).await, "t7-");
+        let settings = settings();
+        let w = Watch { name: "AirPods Pro 3".into(), ean: "0195950543742".into(), ..Default::default() };
+        let hit = euronics.locate(&w, &settings).await.unwrap().unwrap();
+        assert_eq!(hit.confidence, Confidence::Ean);
+        assert!(hit.query.ends_with("/audio/airpods-pro-3-0195950543742"));
+        // Händler-Variante: nur als Vorschlag
+        let w = Watch { name: "Samsung GQ65S94F".into(), ean: "8806095999999".into(), ..Default::default() };
+        let hit = euronics.locate(&w, &settings).await.unwrap().unwrap();
+        assert_eq!(hit.confidence, Confidence::Variant);
+
+        // Gemerkte Zuordnung gilt eine Woche, danach wird neu gesucht
+        let w = online_only_watch("", "0195950543742");
+        let mut reporter = crate::activity::ScanReporter::new("euronics-test", "Euronics", "Gerät", None);
+        let (_, mut state) = euronics.check(&w, &settings, StoreState::default(), &mut reporter).await.unwrap();
+        assert!(Euronics::cached(&w, &state));
+        state.meta.insert("resolved_at".into(), json!("2020-01-01T00:00:00+01:00"));
+        assert!(!Euronics::cached(&w, &state));
+        let (_, state) = euronics.check(&w, &settings, state, &mut reporter).await.unwrap();
+        assert!(Euronics::cached(&w, &state), "nach erneuter Suche ist der Zeitstempel frisch");
     }
 
     #[tokio::test]

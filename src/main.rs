@@ -88,6 +88,9 @@ async fn main() {
             std::process::exit(1);
         }
     };
+    if deal_alarm::debug::enabled() {
+        warn!("Diagnosemodus (DEBUG_CAPTURE) aktiv: Shop-Antworten werden unter {}/debug gespeichert", data_dir.display());
+    }
     info!("Deal-Alarm {} läuft auf http://{host}:{port}", env!("CARGO_PKG_VERSION"));
     let app = api::router(state).into_make_service_with_connect_info::<SocketAddr>();
     if let Err(error) = axum::serve(listener, app).with_graceful_shutdown(shutdown_signal()).await {

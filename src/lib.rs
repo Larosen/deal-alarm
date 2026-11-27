@@ -5,6 +5,7 @@ pub mod activity;
 pub mod api;
 pub mod checker;
 pub mod clientip;
+pub mod debug;
 pub mod model;
 pub mod notifier;
 pub mod ratelimit;
