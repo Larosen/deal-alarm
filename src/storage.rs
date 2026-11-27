@@ -184,6 +184,10 @@ pub fn migrate(mut state: Value) -> Value {
             }
             obj.insert("sources".into(), Value::Object(sources));
         }
+        // idealo kam später dazu: bei bestehenden Geräten einmalig einschalten (danach zählt die Auswahl des Nutzers)
+        if let Some(sources) = obj.get_mut("sources").and_then(Value::as_object_mut) {
+            sources.entry("idealo").or_insert_with(|| json!({"enabled": true, "query": "", "options": {}}));
+        }
         if let Some(prices) = obj.get_mut("store_prices").and_then(Value::as_object_mut) {
             for state in prices.values_mut() {
                 let Some(old) = state.as_object() else { continue };
@@ -341,6 +345,19 @@ mod tests {
     use super::*;
 
     #[test]
+    fn enables_idealo_once_for_existing_watches() {
+        let old = json!({"watches": [
+            {"id": "a", "name": "A", "sources": {"expert": {"enabled": true}}},
+            {"id": "b", "name": "B", "sources": {"idealo": {"enabled": false}}},
+        ]});
+        let state: State = serde_json::from_value(migrate(old)).unwrap();
+        assert!(state.watches[0].source("idealo").enabled);
+        assert!(state.watches[0].source("expert").enabled);
+        // Wer idealo bewusst ausgeschaltet hat, behält das
+        assert!(!state.watches[1].source("idealo").enabled);
+    }
+
+    #[test]
     fn migrates_python_state() {
         let old = json!({
             "settings": {"ntfy_topic": "abc", "interval_minutes": 90},
@@ -370,6 +387,7 @@ mod tests {
         assert_eq!(expert.opt_f64("max_distance", 0.0), 30.0);
         assert!(!watch.source("euronics").enabled);
         assert!(!watch.source("amazon").enabled);
+        assert!(watch.source("idealo").enabled);
         let prices = &watch.store_prices["expert"];
         assert_eq!(prices.meta_str("product_url"), Some("https://www.expert.de/x.html"));
         assert_eq!(prices.meta["webcodes"][0], "123");
