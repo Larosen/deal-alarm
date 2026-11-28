@@ -205,7 +205,7 @@ async fn json_body(request: Request) -> Result<Value, ApiError> {
 fn merge_settings(current: &Settings, body: &Value) -> Result<Settings, ApiError> {
     let mut merged = serde_json::to_value(current).unwrap();
     for (key, value) in body.as_object().into_iter().flatten() {
-        if key == "ntfy_token" && value == TOKEN_MASK {
+        if (key == "ntfy_token" || key == "euronics_cookie") && value == TOKEN_MASK {
             continue;
         }
         if let Some(existing) = merged.get(key).cloned() {
@@ -263,6 +263,9 @@ async fn get_state(State(app): State<AppState>) -> ApiResult {
     let mut data = serde_json::to_value(&state).unwrap();
     if !state.settings.ntfy_token.is_empty() {
         data["settings"]["ntfy_token"] = json!(TOKEN_MASK);
+    }
+    if !state.settings.euronics_cookie.is_empty() {
+        data["settings"]["euronics_cookie"] = json!(TOKEN_MASK);
     }
     data["scheduler"]["running"] = json!(app.engine.is_running());
     data["activity"] = app.engine.status();
@@ -488,7 +491,7 @@ async fn locate_article(State(app): State<AppState>, Query(q): Query<HashMap<Str
     let skip: Vec<String> = get("skip").split(',').map(|s| s.trim().to_string()).filter(|s| !s.is_empty()).collect();
     let watch = Watch { name, ean, ..Default::default() };
     let settings = app.storage.get_settings();
-    let jobs = shops::all().iter().filter(|s| !skip.iter().any(|x| x == s.id())).map(|source| {
+    let jobs = shops::all().iter().filter(|s| s.id() != "mydealz" && !skip.iter().any(|x| x == s.id())).map(|source| {
         let (source, watch, settings) = (source.clone(), watch.clone(), settings.clone());
         async move {
             let result = tokio::time::timeout(LOCATE_TIMEOUT, source.locate(&watch, &settings))
@@ -580,12 +583,12 @@ mod tests {
         assert_eq!(status, 200);
         assert_eq!(state["watches"], json!([]));
         assert_eq!(state["settings"]["interval_minutes"], 120);
-        assert_eq!(state["activity"].as_object().unwrap().keys().cloned().collect::<Vec<_>>(), ["amazon", "euronics", "expert", "idealo"]);
+        assert_eq!(state["activity"].as_object().unwrap().keys().cloned().collect::<Vec<_>>(), ["amazon", "euronics", "expert", "idealo", "mediamarkt", "mydealz", "saturn"]);
 
         let (status, sources) = call(&h.app, "GET", "/api/sources", None, None).await;
         assert_eq!(status, 200);
         let ids: Vec<_> = sources.as_array().unwrap().iter().map(|s| s["id"].as_str().unwrap()).collect();
-        assert_eq!(ids, ["expert", "euronics", "amazon", "idealo"]);
+        assert_eq!(ids, ["expert", "euronics", "amazon", "mediamarkt", "saturn", "idealo", "mydealz"]);
         assert!(sources[2]["options"].as_array().unwrap().iter().any(|o| o["key"] == "warehouse_min_condition" && o["kind"] == "select"));
 
         // Validierung
@@ -714,7 +717,7 @@ mod tests {
         // Euronics-URL ohne EAN
         let (status, err) = call(&h.app, "GET", "/api/article/resolve?q=https%3A%2F%2Fwww.euronics.de%2Fkategorie%2Fprodukt", None, None).await;
         assert_eq!(status, 400);
-        assert!(err["error"].as_str().unwrap().contains("keine EAN"));
+        assert!(err["error"].as_str().unwrap().contains("keine Euronics-Produktseite"));
         // Amazon-URL ohne ASIN
         let (status, err) = call(&h.app, "GET", "/api/article/resolve?q=https%3A%2F%2Fwww.amazon.de%2Fgp%2Fhelp", None, None).await;
         assert_eq!(status, 400);

@@ -143,11 +143,11 @@ function renderWatch(w) {
       const sc = r.scan;
       const scanEl = $(".shop-scan", el);
       const info = document.createElement("span");
-      info.textContent = `${shop === "amazon" ? "Angebotsarten" : "Filialen"}: ${sc.checked}/${sc.planned} in diesem Lauf · ${sc.known}/${sc.total} bekannt`
+      info.textContent = `${shop === "amazon" ? "Angebotsarten" : shop === "idealo" ? "Händler" : shop === "mydealz" ? "Deals" : "Filialen"}: ${sc.checked}/${sc.planned} in diesem Lauf · ${sc.known}/${sc.total} bekannt`
         + (sc.aborted ? " · gedrosselt, Fortsetzung im nächsten Lauf" : "");
       const btn = document.createElement("button");
       btn.className = "linklike";
-      btn.textContent = shop === "amazon" ? "Alle Angebote" : "Alle Filialpreise";
+      btn.textContent = shop === "mydealz" ? "Alle Deals" : shop === "amazon" || shop === "idealo" ? "Alle Angebote" : "Alle Filialpreise";
       btn.addEventListener("click", () => openStores(w, shop));
       scanEl.append(info, btn);
     }
@@ -175,7 +175,7 @@ const storesDialog = $("#stores-dialog");
 let storesData = null;
 
 async function openStores(w, shop) {
-  const amazon = shop === "amazon";
+  const amazon = shop === "amazon" || shop === "idealo" || shop === "mydealz";
   $("#stores-title").textContent = `${w.name} – ${SHOP_LABELS[shop]}: ${amazon ? "alle Angebote" : "Preise aller Filialen"}`;
   $("#stores-head-name").textContent = amazon ? "Angebot" : "Filiale";
   $("#stores-body").innerHTML = '<tr><td colspan="7">Lade …</td></tr>';
@@ -376,7 +376,8 @@ async function locateOthers(article) {
   const run = ++locateRun;
   const name = article.title || watchForm.elements.name.value;
   const skip = Object.keys(article.found || {});
-  const pending = SOURCES.filter((s) => !skip.includes(s.id));
+  // mydealz sucht Deals bei jeder Prüfung, eine feste Zuordnung gibt es dort nicht
+  const pending = SOURCES.filter((s) => !skip.includes(s.id) && s.id !== "mydealz");
   if (!pending.length || (!article.ean && (name || "").trim().length < 3)) {
     list.classList.add("hidden");
     return;

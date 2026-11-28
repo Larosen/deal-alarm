@@ -26,7 +26,7 @@ use crate::model::{CheckError, Coords, Offer, ShopResult, StoreEntry, StoreState
 use crate::ratelimit::{self, AdaptiveLimiter};
 use crate::scan;
 use crate::storage::{Settings, Watch};
-use crate::util::{age_hours, format_price, now_iso, parse_price};
+use crate::util::{age_hours, first_price, format_price, now_iso, parse_price};
 use super::REDISCOVER_HOURS;
 use async_trait::async_trait;
 use regex::Regex;
@@ -36,6 +36,8 @@ use std::sync::{Arc, OnceLock};
 use std::time::Duration;
 
 pub const BASE: &str = "https://www.amazon.de";
+/// „Alle Angebote“-Liste (Fragment), abrufbar ohne Cookies
+pub const AOD_PATH: &str = "/gp/product/ajax/aodAjaxMain/";
 
 /// Angebotsarten in Anzeigereihenfolge: (Kennung, Beschriftung)
 pub const KINDS: &[(&str, &str)] = &[
@@ -102,7 +104,7 @@ fn shipping_re() -> &'static Regex {
 
 fn free_shipping_re() -> &'static Regex {
     static R: OnceLock<Regex> = OnceLock::new();
-    R.get_or_init(|| Regex::new(r"(?i)(?:kostenlose[rn]?\s+(?:lieferung|versand)|versand:?\s*gratis|free (?:delivery|shipping))").unwrap())
+    R.get_or_init(|| Regex::new(r"(?i)(?:(?:kostenlose[rn]?|gratis)\s+(?:lieferung|versand)|versand:?\s*gratis|free (?:delivery|shipping))").unwrap())
 }
 
 fn parse_shipping(text: &str) -> Option<f64> {
@@ -112,25 +114,67 @@ fn parse_shipping(text: &str) -> Option<f64> {
     shipping_re().captures(text).and_then(|c| parse_price(&c[1]))
 }
 
+/// Versandkosten eines Angebots: Attribut `data-csa-c-delivery-price` („GRATIS“, „4,99 €“), sonst aus dem Text.
+fn offer_shipping(el: ElementRef) -> Option<f64> {
+    let attr_sel = sel("[data-csa-c-delivery-price]");
+    let attr = el.select(&attr_sel).filter_map(|e| e.value().attr("data-csa-c-delivery-price")).next();
+    match attr {
+        Some(a) if a.to_lowercase().contains("gratis") || a.to_lowercase().contains("kostenlos") || a.trim() == "0" => Some(0.0),
+        Some(a) if first_price(a).is_some() => first_price(a),
+        _ => parse_shipping(&text_of(el)),
+    }
+}
+
+/// Zu zahlender Preis eines Angebots. Amazon zeigt daneben oft den Streichpreis (`.a-text-price`)
+/// und leere `.a-offscreen`-Elemente – die dürfen nicht zählen.
+fn offer_price(el: ElementRef) -> Option<f64> {
+    // „1.929,00 € mit 30 Prozent Einsparungen“
+    if let Some(p) = el.select(&sel(".apex-pricetopay-accessibility-label")).map(text_of).find_map(|t| first_price(&t)) {
+        return Some(p);
+    }
+    if let Some(price) = el.select(&sel(".apex-pricetopay-value")).next() {
+        if let Some(p) = price.select(&sel(".a-offscreen")).map(text_of).find_map(|t| parse_price(&t)) {
+            return Some(p);
+        }
+        let whole = price.select(&sel(".a-price-whole")).next().map(text_of).unwrap_or_default();
+        let fraction = price.select(&sel(".a-price-fraction")).next().map(text_of).unwrap_or_else(|| "00".into());
+        if let Some(p) = parse_price(&format!("{},{}", whole.trim().trim_end_matches([',', '.']), fraction.trim())) {
+            return Some(p);
+        }
+    }
+    // Älterer Aufbau: erster nicht leerer Preis, der kein Streichpreis ist
+    el.select(&sel(".a-price"))
+        .filter(|p| !p.value().classes().any(|c| c == "a-text-price"))
+        .filter_map(|p| p.select(&sel(".a-offscreen")).map(text_of).find_map(|t| parse_price(&t)))
+        .next()
+}
+
 /// Liest die Angebote aus der „Alle Angebote“-Antwort (AOD, `aodAjaxMain`).
 pub fn parse_offers(page: &str) -> Vec<ParsedOffer> {
     let doc = Html::parse_document(page);
     let offer_sel = sel("#aod-pinned-offer, #aod-offer");
-    let price_sel = sel(".a-price .a-offscreen");
     let heading_sel = sel("#aod-offer-heading");
     let sold_by_sel = sel("#aod-offer-soldBy");
+    let sold_by_link_sel = sel("#aod-offer-soldBy a");
     let pinned_sel = sel("#aod-pinned-offer");
     let mut offers = vec![];
     for el in doc.select(&offer_sel) {
-        let Some(price) = el.select(&price_sel).next().map(text_of).and_then(|t| parse_price(&t)) else { continue };
+        // Ohne Buy Box steht im angehefteten Block „Keine hervorgehobenen Angebote verfügbar“ und kein Preis
+        let Some(price) = offer_price(el) else { continue };
         let is_pinned = pinned_sel.matches(&el);
         let heading = el.select(&heading_sel).next().map(text_of).unwrap_or_default();
         // Das angeheftete Angebot (Buy Box) hat keine Zustandszeile und ist Neuware
         let Some(condition) = (if heading.is_empty() && is_pinned { Some("new") } else { condition_key(&heading) }) else { continue };
-        let seller = el.select(&sold_by_sel).next().map(text_of).unwrap_or_default();
+        // Verkäufername sauber aus dem Link („Best of Electronic“), sonst die ganze Zeile
+        let seller = el
+            .select(&sold_by_link_sel)
+            .map(text_of)
+            .find(|t| !t.is_empty())
+            .or_else(|| el.select(&sold_by_sel).next().map(text_of).map(|t| t.trim_start_matches("Verkäufer").trim().to_string()))
+            .unwrap_or_default();
         let seller_lc = seller.to_lowercase();
         let warehouse = seller_lc.contains("warehouse") || seller_lc.contains("amazon resale");
-        offers.push(ParsedOffer { price, shipping: parse_shipping(&text_of(el)), condition, seller, warehouse });
+        offers.push(ParsedOffer { price, shipping: offer_shipping(el), condition, seller, warehouse });
     }
     offers
 }
@@ -219,6 +263,18 @@ fn pick_ean_result(results: &[SearchResult], name: &str) -> Option<String> {
     let first = results.iter().find(|r| !r.sponsored).or(results.first())?;
     let name_ok = name.trim().is_empty() || first.title.is_empty() || name_match(name, &first.title) >= NAME_MATCH_MIN;
     name_ok.then(|| first.asin.clone())
+}
+
+/// Text der Produktseite, an dem man das Gerät erkennt: Titel und technische Details
+/// (`#prodDetails`, `#detailBullets_feature_div` – dort steht z. B. „Hersteller-Modellnummer GQ65S95HFT“).
+/// Eine EAN zeigt Amazon auf der Produktseite nicht.
+pub fn product_identity_text(page: &str) -> String {
+    let doc = Html::parse_document(page);
+    ["#productTitle", "#prodDetails", "#detailBullets_feature_div", "#productDetails_techSpec_section_1"]
+        .iter()
+        .filter_map(|s| doc.select(&sel(s)).next().map(text_of))
+        .collect::<Vec<_>>()
+        .join(" ")
 }
 
 /// Bester zum Namen passender Treffer (gesponserte zählen nur, wenn sonst keiner passt).
@@ -351,6 +407,18 @@ impl Amazon {
                 let title = results.iter().find(|r| r.asin == asin).map(|r| r.title.clone()).unwrap_or_default();
                 return Ok((asin, Confidence::Ean, title));
             }
+            // Titel ohne Modellnummer („Samsung OLED S95H 4K 65 Zoll“): auf der Produktseite gegenprüfen
+            if query.is_empty() {
+                if let Some(first) = results.iter().find(|r| !r.sponsored) {
+                    let url = format!("{}/dp/{}", self.base, first.asin);
+                    if let Some((page, _)) = self.fetch(limiter, &url, &[]).await? {
+                        if name_match(&watch.name, &product_identity_text(&page)) >= NAME_MATCH_MIN {
+                            crate::info!("Amazon · {}: EAN-Treffer {} über die Produktdetails bestätigt", watch.name, first.asin);
+                            return Ok((first.asin.clone(), Confidence::Ean, first.title.clone()));
+                        }
+                    }
+                }
+            }
             if !query.is_empty() {
                 return Err(CheckError::lookup(format!("Bei Amazon nicht gefunden (Suche nach „{term}“ ohne Treffer)")));
             }
@@ -465,8 +533,9 @@ impl Source for Amazon {
         let state = if state.meta_str("asin") != Some(asin.as_str()) { StoreState::default() } else { state };
         crate::info!("Amazon · {}: ASIN {asin}, Tempo {} Anfragen/Min.", watch.name, settings.amazon_rate_per_min);
 
-        let url = format!("{}/gp/product/ajax/ref=dp_aod_ALL_mbc", self.base);
-        let query = [("asin", asin.as_str()), ("m", ""), ("qid", ""), ("smid", ""), ("sourcecode", ""), ("experienceId", "aodAjaxMain")];
+        // Stand 28.11.2026: die frühere Adresse …/ajax/ref=dp_aod_ALL_mbc liefert 404
+        let url = format!("{}{AOD_PATH}", self.base);
+        let query = [("asin", asin.as_str()), ("pc", "dp"), ("experienceId", "aodAjaxMain")];
         let (page, _) = self
             .fetch(&limiter, &url, &query)
             .await?
@@ -639,7 +708,7 @@ mod tests {
 
     fn router() -> Router {
         Router::new()
-            .route("/gp/product/ajax/ref=dp_aod_ALL_mbc", get(|Query(q): Query<HashMap<String, String>>| async move {
+            .route(AOD_PATH, get(|Query(q): Query<HashMap<String, String>>| async move {
                 assert_eq!(q["asin"], "B0DEMO1234");
                 Html(aod_page())
             }))
@@ -710,6 +779,53 @@ mod tests {
         )
     }
 
+    /// Ausschnitt der echten Angebotsliste (Shop-Bericht 28.11.2026, gekürzt): keine Buy Box,
+    /// Streichpreis neben dem zu zahlenden Preis, Versand als Attribut.
+    fn real_aod_page() -> String {
+        fn offer(seller: &str, whole: &str, label: &str) -> String {
+            format!(
+                r#"<div id="aod-offer"><div id="aod-offer-heading"><h5>Neu</h5></div>
+                <div class="a-section"><span class="a-price"><span class="a-offscreen"> </span></span>
+                <span class="a-price aok-align-center centralizedApexPricePriceToPayMargin apex-pricetopay-value"><span class="a-price-whole">{whole}</span><span class="a-price-fraction">00</span></span>
+                <span class="apex-pricetopay-accessibility-label">{label}</span>
+                <span class="a-price a-text-price"><span class="a-offscreen">2.769,00€</span></span></div>
+                <div data-csa-c-delivery-price="GRATIS">GRATIS Lieferung 4. - 8. Dezember. Details</div>
+                <div id="aod-offer-shipsFrom">Versand {seller}</div>
+                <div id="aod-offer-soldBy">Verkäufer <a>{seller}</a> Die Verkäuferbewertung liegt bei 4.5 von 5 Sternen</div></div>"#
+            )
+        }
+        format!(
+            r#"<html><div id="aod-pinned-offer"><span>Liefern an Hamburg</span> Keine hervorgehobenen Angebote verfügbar</div>
+            <input id="aod-total-offer-count" value="2">{}{}</html>"#,
+            offer("Best of Electronic", "1.929,", "1.929,00 € mit 30 Prozent Einsparungen"),
+            offer("cw-mobile", "2.218,", "2.218,00 € mit 20 Prozent Einsparungen"),
+        )
+    }
+
+    #[test]
+    fn parses_real_offer_list_without_buy_box() {
+        let offers = parse_offers(&real_aod_page());
+        assert_eq!(offers.len(), 2, "{offers:?}"); // angeheftetes Angebot ohne Preis zählt nicht
+        assert_eq!(offers[0].price, 1929.0); // nicht der Streichpreis 2.769
+        assert_eq!(offers[0].seller, "Best of Electronic");
+        assert_eq!(offers[0].shipping, Some(0.0));
+        let best: HashMap<_, _> = best_per_kind(&offers).into_iter().collect();
+        assert!(best["new"].is_none(), "ohne Buy Box gibt es keine Amazon-Neuware");
+        assert_eq!(best["new_marketplace"].as_ref().unwrap().price, 1929.0);
+        // ohne Barrierefreiheits-Text: Euro + Cent aus .apex-pricetopay-value
+        let page = real_aod_page().replace("apex-pricetopay-accessibility-label", "x");
+        assert_eq!(parse_offers(&page)[1].price, 2218.0);
+    }
+
+    #[test]
+    fn product_details_confirm_ean_hit() {
+        let page = r#"<span id="productTitle">Samsung OLED S95H 4K 65 Zoll (163 cm), UHD Fernseher</span>
+            <table id="prodDetails"><tr><th>Modellname</th><td>GQ65S95HFT</td></tr><tr><th>Hersteller-Modellnummer</th><td>GQ65S95HFT</td></tr></table>"#;
+        let text = product_identity_text(page);
+        assert!(name_match("Samsung GQ65S95HFTXZG S95H Vision AI Smart TV (2026) OLED, 65\"", &text) >= NAME_MATCH_MIN);
+        assert_eq!(name_match("Samsung GQ55S95HFTXZG S95H", &text), 0.0);
+    }
+
     #[test]
     fn parses_search_results() {
         let page = format!("{}{}", result_html("B0AD000000", "Werbung", true), result_html("B0DEMO1234", "Sony WH-1000XM6 Kopfhörer", false));
@@ -725,7 +841,7 @@ mod tests {
     #[tokio::test]
     async fn falls_back_to_name_search() {
         let router = Router::new()
-            .route("/gp/product/ajax/ref=dp_aod_ALL_mbc", get(|| async { Html(aod_page()) }))
+            .route(AOD_PATH, get(|| async { Html(aod_page()) }))
             .route("/s", get(|Query(q): Query<HashMap<String, String>>| async move {
                 Html(match q["k"].as_str() {
                     // EAN-Suche liefert nur Ähnliches
@@ -762,7 +878,7 @@ mod tests {
 
     #[tokio::test]
     async fn captcha_page_counts_as_throttling() {
-        let router = Router::new().route("/gp/product/ajax/ref=dp_aod_ALL_mbc", get(|| async {
+        let router = Router::new().route(AOD_PATH, get(|| async {
             Html("<html><form action=\"/errors/validateCaptcha\"></form></html>")
         }));
         let amazon = Amazon::new(&serve(router).await, "amazon-test-3");
@@ -775,13 +891,13 @@ mod tests {
 
     #[tokio::test]
     async fn unreadable_page_is_an_error_but_empty_list_is_not() {
-        let router = Router::new().route("/gp/product/ajax/ref=dp_aod_ALL_mbc", get(|| async { Html("<html>irgendwas</html>") }));
+        let router = Router::new().route(AOD_PATH, get(|| async { Html("<html>irgendwas</html>") }));
         let amazon = Amazon::new(&serve(router).await, "amazon-test-4");
         let mut reporter = crate::activity::ScanReporter::new("amazon-test", "Amazon", "x", None);
         let w = watch(json!({}), "B0DEMO1234", "");
         assert!(matches!(amazon.check(&w, &settings(), StoreState::default(), &mut reporter).await, Err(CheckError::Other(_))));
 
-        let router = Router::new().route("/gp/product/ajax/ref=dp_aod_ALL_mbc", get(|| async { Html("<div id=\"aod-offer-list\"></div>") }));
+        let router = Router::new().route(AOD_PATH, get(|| async { Html("<div id=\"aod-offer-list\"></div>") }));
         let amazon = Amazon::new(&serve(router).await, "amazon-test-5");
         let (result, _) = amazon.check(&w, &settings(), StoreState::default(), &mut reporter).await.unwrap();
         assert!(!result.available && result.detail == "Keine Angebote bei Amazon");

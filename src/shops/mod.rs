@@ -12,6 +12,8 @@ pub mod expert;
 #[cfg(test)]
 mod fixtures;
 pub mod idealo;
+pub mod mediamarkt;
+pub mod mydealz;
 
 use crate::activity::ScanReporter;
 use crate::model::{CheckError, Coords, Offer, ShopResult, StoreState};
@@ -212,7 +214,10 @@ pub fn all() -> &'static [Arc<dyn Source>] {
             Arc::new(expert::Expert::default()) as Arc<dyn Source>,
             euronics() as Arc<dyn Source>,
             Arc::new(amazon::Amazon::default()),
+            Arc::new(mediamarkt::MediaSaturn::mediamarkt()),
+            Arc::new(mediamarkt::MediaSaturn::saturn()),
             Arc::new(idealo::Idealo::default()),
+            Arc::new(mydealz::Mydealz::default()),
         ]
     })
 }

@@ -10,7 +10,7 @@
 //!
 //! Der Preis wird aus den strukturierten Produktdaten (schema.org) der Seite gelesen.
 
-use super::common::{best_name_match, http_client, name_match, name_terms, plz_coordinates};
+use super::common::{http_client, name_match, name_terms, plz_coordinates};
 use super::{Confidence, Identity, Located, OptionDef, ResolveError, Source};
 use crate::model::{CheckError, Coords, Offer, ShopResult, StoreState, Suggestion};
 use crate::ratelimit::{self, AdaptiveLimiter};
@@ -244,7 +244,7 @@ pub fn same_ean(a: &str, b: &str) -> bool {
     !a.is_empty() && !b.is_empty() && a.trim_start_matches('0') == b.trim_start_matches('0')
 }
 
-fn jsonld_items(page: &str) -> Vec<Value> {
+pub(crate) fn jsonld_items(page: &str) -> Vec<Value> {
     let mut items = vec![];
     for cap in jsonld_re().captures_iter(page) {
         let Ok(data) = serde_json::from_str::<Value>(unescape(cap[1].trim()).as_str()) else { continue };
@@ -364,24 +364,14 @@ fn first_product_link(page: &str, base_url: &str) -> Option<String> {
             continue;
         }
         for element in item["itemListElement"].as_array().into_iter().flatten() {
-            let link = element["url"].as_str().filter(|u| !u.is_empty()).or(element["item"]["url"].as_str());
+            // Shopware liefert im ItemList teils `shopware.php?…`-Links statt des Produktpfads – die taugen nicht
+            let link = element["url"].as_str().filter(|u| !u.is_empty()).or(element["item"]["url"].as_str()).filter(|u| !u.contains("shopware.php"));
             if let Some(joined) = link.and_then(|l| base.join(l).ok()) {
                 return Some(joined.to_string());
             }
         }
     }
     None
-}
-
-/// Produktlink in einer Ergebnisseite, dessen Pfad auf die gesuchte EAN endet.
-fn link_for_ean(page: &str, base_url: &str, ean: &str) -> Option<String> {
-    let pattern = format!(
-        r#"(?i)href=["']([^"'#?]*-0*{}))/?(?:[?#][^"']*)?["']"#,
-        regex::escape(ean.trim_start_matches('0'))
-    )
-    .replacen("))", ")", 1);
-    let found = Regex::new(&pattern).ok()?.captures(page)?[1].to_string();
-    reqwest::Url::parse(base_url).ok()?.join(&unescape(&found)).ok().map(|u| u.to_string())
 }
 
 /// Alle Produktlinks einer Ergebnisseite (Pfad endet auf eine EAN), in Reihenfolge, ohne Doppelte.
@@ -409,11 +399,51 @@ fn product_links(page: &str, base_url: &str) -> Vec<String> {
 /// (Modellnummer stimmt überein, die meisten übrigen Wörter auch).
 const NAME_AUTO_ACCEPT: f64 = 0.75;
 
+/// HTTP-Client mit dem Cookie aus den Einstellungen (nur für die Suche).
+fn search_client(cookie: &str) -> reqwest::Client {
+    use reqwest::header::{HeaderMap, HeaderValue, ACCEPT, ACCEPT_LANGUAGE, COOKIE, USER_AGENT};
+    let mut headers = HeaderMap::new();
+    headers.insert(USER_AGENT, HeaderValue::from_static(super::common::USER_AGENT));
+    headers.insert(ACCEPT_LANGUAGE, HeaderValue::from_static("de-DE,de;q=0.9,en;q=0.5"));
+    headers.insert(ACCEPT, HeaderValue::from_static("text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"));
+    if let Ok(v) = HeaderValue::from_str(cookie) {
+        headers.insert(COOKIE, v);
+    }
+    reqwest::Client::builder().default_headers(headers).connect_timeout(Duration::from_secs(15)).build().expect("HTTP-Client")
+}
+
+/// Kennzeichen von Fehlermeldungen, die von der AWS-WAF-Sperre stammen.
+const WAF_PREFIX: &str = "[WAF]";
+
+/// Challenge-Seite der AWS WAF (Stand 28.11.2026: HTTP 405, ~2 KB, Skripte von *.awswaf.com).
+pub fn is_waf_challenge(status: u16, body: &str) -> bool {
+    (status == 405 || status == 202 || body.len() < 20_000) && (body.contains("awswaf") || body.contains("ob Sie ein Mensch sind"))
+}
+
+/// Ergebnis der Zuordnung eines Geräts zu einem Euronics-Produkt.
+#[derive(Debug, Clone)]
+pub struct Resolved {
+    pub path: String,
+    /// Hersteller-EAN aus den Produktdaten (`gtin`) – die Zahl am Ende des Pfads ist die Euronics-Artikelnummer
+    pub gtin: String,
+    pub title: String,
+    pub confidence: Confidence,
+}
+
+/// Bundles („… inkl. Soundbar“) sind nicht das gesuchte Gerät, auch wenn die Modellnummer passt.
+fn is_bundle(title: &str, wanted: &str) -> bool {
+    let t = title.to_lowercase();
+    let w = wanted.to_lowercase();
+    ["inkl", "bundle", " set ", "+ "].iter().any(|k| t.contains(k) && !w.contains(k))
+}
+
 pub struct Euronics {
     base: String,
     limiter_prefix: String,
     client: reqwest::Client,
     directory: Mutex<Option<(Instant, Arc<Directory>)>>,
+    /// Euronics-Artikel über das idealo-Angebot suchen (aus in Tests mit eigener Basis)
+    idealo_fallback: bool,
 }
 
 impl Default for Euronics {
@@ -442,6 +472,7 @@ impl Euronics {
             limiter_prefix: limiter_prefix.to_string(),
             client: http_client("text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"),
             directory: Mutex::new(None),
+            idealo_fallback: base.trim_end_matches('/') == BASE,
         }
     }
 
@@ -470,10 +501,16 @@ impl Euronics {
             return Ok(None);
         }
         let status = response.status().as_u16();
-        let response = response.error_for_status()?;
         let final_url = response.url().to_string();
+        let ok = response.status().is_success();
         let body = response.text().await?;
         crate::debug::capture("euronics", &final_url, status, &body);
+        if is_waf_challenge(status, &body) {
+            return Err(FetchError::RateLimited(format!("{WAF_PREFIX} {host}: Bot-Sperre (AWS WAF, HTTP {status})")));
+        }
+        if !ok {
+            return Err(FetchError::Other(format!("HTTP {status} von {host}")));
+        }
         Ok(Some((body, final_url)))
     }
 
@@ -580,28 +617,71 @@ impl Euronics {
         selected
     }
 
-    /// Suchseite im Onlineshop: (Seite, URL nach Weiterleitung)
-    async fn search_page(&self, settings: &Settings, term: &str) -> Result<(String, String), CheckError> {
+    /// Suchseite im Onlineshop: (Seite, URL nach Weiterleitung), `None` bei Bot-Sperre (AWS WAF).
+    ///
+    /// Die Suche ist bei Euronics hinter der WAF; mit einem Cookie aus dem eigenen Browser
+    /// (Einstellung „Euronics-Suche: Cookie“) geht sie trotzdem.
+    async fn search_page(&self, settings: &Settings, term: &str) -> Result<Option<(String, String)>, CheckError> {
         let search_url = format!("{}/search?sSearch={}", self.base, urlencoding::encode(term));
         let limiter = self.limiter(settings, &search_url);
-        Ok(Self::get(&self.client, &limiter, &search_url, false).await?.expect("allow_missing=false"))
+        let cookie = settings.euronics_cookie.trim();
+        let client = if cookie.is_empty() { self.client.clone() } else { search_client(cookie) };
+        match Self::get(&client, &limiter, &search_url, false).await {
+            Ok(page) => Ok(page),
+            Err(FetchError::RateLimited(m)) if m.starts_with(WAF_PREFIX) => {
+                crate::info!("Euronics-Suche: Bot-Sperre (AWS WAF){}", if cookie.is_empty() { "" } else { " – Cookie abgelaufen?" });
+                Ok(None)
+            }
+            Err(e) => Err(e.into()),
+        }
     }
 
-    /// Produktpfad aus der hinterlegten URL, per EAN-Suche oder per Namenssuche im Onlineshop.
+    /// Produktdaten der Onlineshop-Seite (dort steht die Hersteller-EAN als `gtin`).
+    async fn product(&self, settings: &Settings, path: &str) -> Result<Option<Product>, CheckError> {
+        let url = format!("{}/{path}", self.base);
+        let limiter = self.limiter(settings, &url);
+        Ok(Self::get(&self.client, &limiter, &url, true).await?.and_then(|(page, final_url)| parse_product_page(&page, &final_url)))
+    }
+
+    /// Kandidaten einer Suchseite: (Pfad, Titel). Führte die Suche direkt aufs Produkt, ist das der einzige.
+    fn candidates(page: &str, final_url: &str, stores: &[Market]) -> Vec<(String, String)> {
+        if let Some(product) = parse_product_page(page, final_url) {
+            let path = product_path(final_url.split('?').next().unwrap(), stores);
+            let title = if product.title.is_empty() { title_from_path(&path) } else { product.title };
+            return vec![(path, title)];
+        }
+        product_links(page, final_url)
+            .into_iter()
+            .map(|l| {
+                let path = product_path(&l, stores);
+                let title = title_from_path(&path);
+                (path, title)
+            })
+            .collect()
+    }
+
+    /// Produktpfad aus der hinterlegten URL, per Suche (EAN, dann Name) oder über idealo.
     ///
-    /// Automatisch geprüft wird ein Suchtreffer, wenn seine EAN zur EAN des Geräts passt oder –
-    /// bei der Namenssuche – Modellnummer und Name eindeutig übereinstimmen. Sonst wird der
-    /// Treffer als Vorschlag gemeldet: Ob es dasselbe Gerät ist, entscheidet der Nutzer.
-    async fn resolve_path(&self, watch: &Watch, settings: &Settings, stores: &[Market], state: &StoreState) -> Result<String, CheckError> {
+    /// Ob es dasselbe Gerät ist, entscheidet die Hersteller-EAN der Produktseite (`gtin`). Ohne
+    /// passende EAN wird ein Treffer nur übernommen, wenn das Gerät keine EAN hat und Name und
+    /// Modellnummer eindeutig passen (keine Bundles). Sonst wird er als Vorschlag gemeldet.
+    pub async fn resolve(&self, watch: &Watch, settings: &Settings, stores: &[Market], state: &StoreState) -> Result<Resolved, CheckError> {
         let query = watch.source("euronics").query.trim().to_string();
         let ean = watch.ean.trim().to_string();
         if query.contains("euronics.de") || query.contains("mediaathome.de") {
             let path = product_path(query.split('#').next().unwrap().split('?').next().unwrap(), stores);
-            let found = ean_from_path(&path);
-            if !ean.is_empty() && !found.is_empty() && !same_ean(&found, &ean) {
-                crate::info!("Euronics-URL hat EAN {found}, das Gerät EAN {ean} (Händler-Variante) – geprüft wird die eingetragene URL");
+            let cached_gtin = state.meta_str("gtin").filter(|_| state.meta_str("product_path") == Some(path.as_str())).map(str::to_string);
+            let (gtin, title) = match cached_gtin {
+                Some(g) => (g, state.meta_str("title").unwrap_or_default().to_string()),
+                None => match self.product(settings, &path).await {
+                    Ok(Some(p)) => (p.ean, p.title),
+                    _ => (String::new(), title_from_path(&path)),
+                },
+            };
+            if !ean.is_empty() && !gtin.is_empty() && !same_ean(&gtin, &ean) {
+                crate::info!("Euronics-URL hat EAN {gtin}, das Gerät EAN {ean} (Händler-Variante) – geprüft wird die eingetragene URL");
             }
-            return Ok(path);
+            return Ok(Resolved { path, gtin, title, confidence: Confidence::Ean });
         }
         let term = if query.is_empty() { ean.clone() } else { query.clone() };
         let names = if query.is_empty() { name_terms(watch, "euronics") } else { vec![] };
@@ -610,84 +690,126 @@ impl Euronics {
         }
         if Self::cached(watch, state) {
             if let Some(path) = state.meta_str("product_path") {
-                return Ok(path.to_string());
+                return Ok(Resolved {
+                    path: path.to_string(),
+                    gtin: state.meta_str("gtin").unwrap_or_default().to_string(),
+                    title: state.meta_str("title").unwrap_or_default().to_string(),
+                    confidence: Confidence::Ean,
+                });
             }
         }
-        let matches_ean = |path: &str| ean.is_empty() || same_ean(&ean_from_path(path), &ean);
-        let mut suggestion: Option<String> = None;
+        let mut suggestion: Option<(String, String, String)> = None; // (Pfad, Titel, EAN)
         let mut tried = vec![];
+        let mut blocked = false;
+
+        // Höchstens 3 Produktseiten je Suche prüfen (jede kostet eine Anfrage)
+        const VERIFY: usize = 3;
 
         if !term.is_empty() {
             tried.push(term.clone());
-            let (page, final_url) = self.search_page(settings, &term).await?;
-            let mut path = None;
-            if parse_product_page(&page, &final_url).is_some() {
-                path = Some(product_path(final_url.split('?').next().unwrap(), stores));
-            } else if !ean.is_empty() {
-                path = link_for_ean(&page, &final_url, &ean).map(|l| product_path(&l, stores));
-            }
-            if path.is_none() {
-                path = first_product_link(&page, &final_url).map(|l| product_path(&l, stores));
-            }
-            match path {
-                Some(p) if matches_ean(&p) || !query.is_empty() => return Ok(p),
-                Some(p) => suggestion = Some(p),
-                None => {}
+            match self.search_page(settings, &term).await? {
+                None => blocked = true,
+                Some((page, final_url)) => {
+                    let candidates = Self::candidates(&page, &final_url, stores);
+                    if !query.is_empty() {
+                        // eigener Suchbegriff: erster Treffer
+                        if let Some((path, title)) = candidates.into_iter().next() {
+                            return Ok(Resolved { path, gtin: String::new(), title, confidence: Confidence::Name });
+                        }
+                    } else {
+                        for (path, title) in candidates.into_iter().take(VERIFY) {
+                            let Some(product) = self.product(settings, &path).await? else { continue };
+                            if same_ean(&product.ean, &ean) {
+                                let title = if product.title.is_empty() { title } else { product.title };
+                                return Ok(Resolved { path, gtin: product.ean, title, confidence: Confidence::Ean });
+                            }
+                            // Produktseite ohne EAN: Treffer der EAN-Suche gilt, wenn der Name passt
+                            let shown = if product.title.is_empty() { title.clone() } else { product.title.clone() };
+                            if product.ean.is_empty() && name_match(&watch.name, &shown) >= super::common::NAME_MATCH_MIN {
+                                return Ok(Resolved { path, gtin: String::new(), title: shown, confidence: Confidence::Name });
+                            }
+                            if suggestion.is_none() && !is_bundle(&title, &watch.name) {
+                                suggestion = Some((path, title, product.ean));
+                            }
+                        }
+                    }
+                }
             }
         }
 
-        for name in &names {
-            tried.push(name.clone());
-            let (page, final_url) = self.search_page(settings, name).await?;
-            // Suche führte direkt auf eine Produktseite
-            let candidates: Vec<(String, String)> = match parse_product_page(&page, &final_url) {
-                Some(product) => {
-                    let path = product_path(final_url.split('?').next().unwrap(), stores);
-                    let title = if product.title.is_empty() { title_from_path(&path) } else { product.title };
-                    vec![(path, title)]
-                }
-                None => product_links(&page, &final_url)
+        if !blocked {
+            for name in &names {
+                tried.push(name.clone());
+                let Some((page, final_url)) = self.search_page(settings, name).await? else {
+                    blocked = true;
+                    break;
+                };
+                let mut ranked: Vec<((String, String), f64)> = Self::candidates(&page, &final_url, stores)
                     .into_iter()
-                    .map(|l| {
-                        let path = product_path(&l, stores);
-                        let title = title_from_path(&path);
-                        (path, title)
+                    .filter(|(_, t)| !is_bundle(t, name))
+                    .map(|c| {
+                        let score = name_match(name, &c.1);
+                        (c, score)
                     })
-                    .collect(),
-            };
-            if let Some((path, _)) = candidates.iter().find(|(p, t)| !ean.is_empty() && same_ean(&ean_from_path(p), &ean) && name_match(name, t) > 0.0) {
-                return Ok(path.clone());
-            }
-            if let Some((i, score)) = best_name_match(name, candidates.iter().map(|(_, t)| t.as_str())) {
-                let (path, title) = &candidates[i];
-                if matches_ean(path) || score >= NAME_AUTO_ACCEPT {
-                    crate::info!(
-                        "Euronics · {}: über Namenssuche „{name}“ zugeordnet: {title}{}",
-                        watch.name,
-                        if matches_ean(path) { String::new() } else { format!(" (EAN {} statt {ean})", ean_from_path(path)) }
-                    );
-                    return Ok(path.clone());
+                    .filter(|(_, score)| *score >= super::common::NAME_MATCH_MIN)
+                    .collect();
+                ranked.sort_by(|a, b| b.1.total_cmp(&a.1));
+                for ((path, title), score) in ranked.into_iter().take(VERIFY) {
+                    let product = self.product(settings, &path).await?;
+                    let gtin = product.as_ref().map(|p| p.ean.clone()).unwrap_or_default();
+                    let title = product.map(|p| p.title).filter(|t| !t.is_empty()).unwrap_or(title);
+                    if !ean.is_empty() && same_ean(&gtin, &ean) {
+                        return Ok(Resolved { path, gtin, title, confidence: Confidence::Ean });
+                    }
+                    // EAN unbekannt (Gerät oder Produktseite ohne EAN) und Name/Modellnummer eindeutig
+                    if (ean.is_empty() || gtin.is_empty()) && score >= NAME_AUTO_ACCEPT {
+                        crate::info!("Euronics · {}: über Namenssuche „{name}“ zugeordnet: {title}", watch.name);
+                        return Ok(Resolved { path, gtin, title, confidence: Confidence::Name });
+                    }
+                    if suggestion.is_none() {
+                        suggestion = Some((path, title, gtin));
+                    }
                 }
-                suggestion = Some(path.clone());
             }
         }
 
-        let Some(path) = suggestion else {
+        // Suche gesperrt oder erfolglos: Euronics-Angebot bei idealo
+        if self.idealo_fallback && suggestion.is_none() && (blocked || !ean.is_empty()) && query.is_empty() {
+            let idealo = super::idealo::Idealo::default();
+            if let Some(url) = idealo.merchant_url(watch, settings, "euronics", "euronics.de").await {
+                let path = product_path(&url, stores);
+                if let Some(product) = self.product(settings, &path).await? {
+                    if ean.is_empty() || same_ean(&product.ean, &ean) {
+                        crate::info!("Euronics · {}: über das idealo-Angebot zugeordnet: {}", watch.name, product.title);
+                        return Ok(Resolved { path, gtin: product.ean, title: product.title, confidence: Confidence::Ean });
+                    }
+                    suggestion = Some((path, product.title, product.ean));
+                }
+            }
+        }
+
+        let Some((path, title, found)) = suggestion else {
+            if blocked {
+                return Err(CheckError::lookup(
+                    "Die Euronics-Suche ist durch eine Bot-Sperre (AWS WAF) geschützt und das Gerät war auch über idealo nicht \
+                     zu finden. Bitte den Euronics-Link beim Gerät eintragen (Produkt- und Marktseiten funktionieren) oder in den \
+                     Einstellungen ein Cookie für die Euronics-Suche hinterlegen.",
+                ));
+            }
             return Err(CheckError::lookup(format!(
                 "Bei Euronics nicht gefunden (Suche nach {} ohne passenden Treffer) – falls vorhanden, Produkt-URL im Gerät eintragen",
                 tried.iter().map(|t| format!("„{t}“")).collect::<Vec<_>>().join(", ")
             )));
         };
         // Hersteller wie Samsung vergeben je Händler eigene Modellnummern und EANs (expert S94 = Euronics S93).
-        let found = ean_from_path(&path);
         Err(CheckError::Lookup {
             message: format!(
-                "Euronics führt EAN {ean} nicht. Gefunden wurde „{}“ (EAN {}) – falls das dasselbe Gerät ist \
+                "Euronics führt {} nicht. Gefunden wurde „{title}“ (EAN {}) – falls das dasselbe Gerät ist \
                  (Händler-Variante), als Euronics-Produkt übernehmen.",
-                title_from_path(&path),
+                if ean.is_empty() { "dieses Gerät eindeutig".to_string() } else { format!("EAN {ean}") },
                 if found.is_empty() { "?" } else { &found }
             ),
-            suggestion: Some(Suggestion { url: format!("{}/{path}", self.base), title: title_from_path(&path) }),
+            suggestion: Some(Suggestion { url: format!("{}/{path}", self.base), title }),
         })
     }
 
@@ -738,11 +860,14 @@ impl Source for Euronics {
 
     async fn identify(&self, input: &str) -> Result<Identity, ResolveError> {
         let path = product_path(input.split('#').next().unwrap().split('?').next().unwrap(), &parse_store_list(input));
-        let ean = ean_from_path(&path);
-        if ean.is_empty() {
-            return Err(ResolveError::Invalid("In der Euronics-URL steht keine EAN – bitte die Produktseite verwenden".into()));
+        if ean_from_path(&path).is_empty() {
+            return Err(ResolveError::Invalid("Das ist keine Euronics-Produktseite – bitte den Link zum Produkt verwenden".into()));
         }
-        Ok(Identity { title: title_from_path(&path), ean, query: format!("{BASE}/{path}") })
+        // Die Zahl am Ende des Pfads ist die Euronics-Artikelnummer; die Hersteller-EAN steht auf der Produktseite
+        // (Produktseiten sind ohne Bot-Sperre abrufbar). Klappt das nicht, suchen die anderen Shops über den Namen.
+        let product = self.product(&Settings::default(), &path).await.ok().flatten();
+        let title = product.as_ref().map(|p| p.title.clone()).filter(|t| !t.is_empty()).unwrap_or_else(|| title_from_path(&path));
+        Ok(Identity { title, ean: product.map(|p| p.ean).unwrap_or_default(), query: format!("{BASE}/{path}") })
     }
 
     fn offer_url(&self, _state: &StoreState, _store_id: &str) -> Option<String> {
@@ -751,15 +876,12 @@ impl Source for Euronics {
 
     async fn locate(&self, watch: &Watch, settings: &Settings) -> Result<Option<Located>, String> {
         let stores = parse_store_list(&settings.euronics_stores);
-        match self.resolve_path(watch, settings, &stores, &StoreState::default()).await {
-            Ok(path) => {
-                let same = same_ean(&ean_from_path(&path), watch.ean.trim());
-                Ok(Some(Located {
-                    query: format!("{BASE}/{path}"),
-                    title: title_from_path(&path),
-                    confidence: if same { Confidence::Ean } else { Confidence::Name },
-                }))
-            }
+        match self.resolve(watch, settings, &stores, &StoreState::default()).await {
+            Ok(r) => Ok(Some(Located {
+                query: format!("{BASE}/{}", r.path),
+                title: if r.title.is_empty() { title_from_path(&r.path) } else { r.title },
+                confidence: r.confidence,
+            })),
             Err(CheckError::Lookup { suggestion: Some(s), .. }) => {
                 let path = product_path(&s.url, &stores);
                 Ok(Some(Located { query: format!("{BASE}/{path}"), title: s.title, confidence: Confidence::Variant }))
@@ -779,7 +901,8 @@ impl Source for Euronics {
         let cfg = watch.source("euronics");
         let markets = self.select_markets(cfg.opt_bool("all_stores", true), cfg.opt_f64("max_distance", 0.0), settings).await;
         let from_cache = Self::cached(watch, &state);
-        let path = self.resolve_path(watch, settings, &markets, &state).await?;
+        let resolved = self.resolve(watch, settings, &markets, &state).await?;
+        let path = resolved.path.clone();
         crate::info!(
             "Euronics · {}: Produkt {}/{path}, {} Märkte + Onlineshop, Tempo {} Anfragen/Min. je Domain",
             watch.name, self.base, markets.len(), settings.euronics_rate_per_min
@@ -855,7 +978,7 @@ impl Source for Euronics {
         let result = ShopResult {
             title: title.clone(),
             url: best.and_then(|b| b.url.clone()).unwrap_or_else(|| format!("{}/{path}", self.base)),
-            ean: ean_from_path(&path),
+            ean: resolved.gtin.clone(),
             price: best.map(|b| b.total_price),
             available: best.is_some(),
             detail,
@@ -866,6 +989,7 @@ impl Source for Euronics {
         let resolved_at = state.meta_str("resolved_at").filter(|_| from_cache).map(str::to_string).unwrap_or_else(now_iso);
         state.meta.insert("resolved_at".into(), json!(resolved_at));
         state.meta.insert("product_path".into(), json!(path));
+        state.meta.insert("gtin".into(), json!(resolved.gtin));
         state.meta.insert("title".into(), json!(title));
         state.meta.insert("query".into(), json!(query));
         Ok((result, state))
@@ -991,8 +1115,49 @@ mod tests {
         format!("http://{addr}")
     }
 
-    fn product_html(name: &str, price: &str) -> String {
-        jsonld_page(json!({"@type": "Product", "name": name, "offers": {"@type": "Offer", "price": price, "availability": "InStock"}}))
+    /// Produktseite wie bei Euronics: `sku` = Artikelnummer (steht im Pfad), `gtin` = Hersteller-EAN.
+    fn real_product_html(name: &str, price: &str, sku: &str, gtin: &str) -> String {
+        jsonld_page(json!({"@type": "Product", "name": name, "sku": sku, "gtin": gtin, "brand": {"@type": "Brand", "name": "Samsung"},
+            "offers": {"@type": "Offer", "price": price, "availability": "https://schema.org/InStock"}}))
+    }
+
+    /// Suchergebnis wie bei Euronics/media@home (Shop-Bericht 28.11.2026, gekürzt): `.product--box` mit SEO-Pfad,
+    /// dazu ein ItemList, dessen `url` ein unbrauchbarer `shopware.php`-Link ist.
+    fn real_search_html(boxes: &[(&str, &str)]) -> String {
+        let items: String = boxes
+            .iter()
+            .map(|(path, title)| format!(r#"<div class="product--box" data-ordernumber="x"><a class="product--title" href="/{path}" title="{title}">{title}</a></div>"#))
+            .collect();
+        format!(
+            r#"<html>{items}{}</html>"#,
+            jsonld_page(json!({"@type": "ItemList", "itemListElement": [{"@type": "ListItem", "item": {"@type": "Product", "url": "shopware.php?sViewport=detail&sArticle=1"}}]}))
+        )
+    }
+
+    const TV_PATH: &str = "tv-und-audio/fernsehen/oled-tvs/gq65s95hft-163-cm-65-oled-vision-ai-smart-tv-graphitschwarz-4065465352589";
+    const BUNDLE_PATH: &str = "tv-und-audio/fernsehen/oled-tvs/gq65s95hft-inkl-hw-b760gf-4065465435435";
+    const TV_EAN: &str = "8806099134839";
+    const TV_NAME: &str = "Samsung GQ65S95HFTXZG S95H Vision AI Smart TV (2026) OLED, 65\"";
+
+    fn tv_router(search_blocked: bool) -> Router {
+        Router::new()
+            .route("/search", get(move |Query(q): Query<HashMap<String, String>>| async move {
+                if search_blocked {
+                    // AWS-WAF-Challenge wie am 28.11.2026: HTTP 405, ~2 KB
+                    return (axum::http::StatusCode::METHOD_NOT_ALLOWED,
+                        axum::response::Html(r#"<html><title>Lassen Sie uns prüfen, ob Sie ein Mensch sind</title><script src="https://x.eu-central-1.token.awswaf.com/x/challenge.js"></script></html>"#.to_string()));
+                }
+                let page = match q["sSearch"].as_str() {
+                    "8806099134839" => real_search_html(&[(TV_PATH, "Samsung GQ65S95HFT 163 cm (65\") OLED Vision AI Smart TV")]),
+                    _ => real_search_html(&[
+                        (BUNDLE_PATH, "Samsung GQ65S95HFT 163 cm (65\") OLED inkl. HW-B760GF Soundbar"),
+                        (TV_PATH, "Samsung GQ65S95HFT 163 cm (65\") OLED Vision AI Smart TV"),
+                    ]),
+                };
+                (axum::http::StatusCode::OK, axum::response::Html(page))
+            }))
+            .route(&format!("/{TV_PATH}"), get(|| async { axum::response::Html(real_product_html("GQ65S95HFT 163 cm (65) OLED Vision AI Smart TV", "1799.00", "4065465352589", TV_EAN)) }))
+            .route(&format!("/{BUNDLE_PATH}"), get(|| async { axum::response::Html(real_product_html("GQ65S95HFT inkl. HW-B760GF", "2199.00", "4065465435435", "4065465435435")) }))
     }
 
     fn online_only_watch(query: &str, ean: &str) -> Watch {
@@ -1009,101 +1174,77 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn search_picks_product_with_matching_ean() {
-        let router = Router::new()
-            .route("/search", get(|Query(_q): Query<HashMap<String, String>>| async {
-                axum::response::Html(r#"<a href="/audio/falsch-0000000000001">x</a><a href="/audio/airpods-pro-0195950543742">y</a>"#)
-            }))
-            .route("/audio/airpods-pro-0195950543742", get(|| async { axum::response::Html(product_html("AirPods Pro 3", "219.00")) }));
-        let euronics = Euronics::new(&serve(router).await, "t1-");
-        let watch = online_only_watch("", "0195950543742");
+    async fn ean_search_is_verified_by_gtin_not_by_path() {
+        let euronics = Euronics::new(&serve(tv_router(false)).await, "t1-");
+        let mut watch = online_only_watch("", TV_EAN);
+        watch.name = TV_NAME.into();
         let mut reporter = crate::activity::ScanReporter::new("euronics-test", "Euronics", "Gerät", None);
         let (result, state) = euronics.check(&watch, &settings(), StoreState::default(), &mut reporter).await.unwrap();
-        assert_eq!(result.price, Some(219.0));
-        assert_eq!(result.title, "AirPods Pro 3");
-        assert_eq!(state.meta_str("product_path"), Some("audio/airpods-pro-0195950543742"));
-        assert_eq!(state.stores[ONLINE_STORE].offer.as_ref().unwrap().total_price, 219.0);
+        assert_eq!(result.price, Some(1799.0));
+        assert_eq!(result.ean, TV_EAN, "Hersteller-EAN aus gtin, nicht die Artikelnummer aus dem Pfad");
+        assert_eq!(state.meta_str("product_path"), Some(TV_PATH));
+        assert_eq!(state.meta_str("gtin"), Some(TV_EAN));
+        let hit = euronics.locate(&watch, &settings()).await.unwrap().unwrap();
+        assert_eq!(hit.confidence, Confidence::Ean);
     }
 
     #[tokio::test]
-    async fn other_product_becomes_suggestion() {
-        let router = Router::new().route("/search", get(|| async {
-            axum::response::Html(r#"<a href="/tv/samsung-s93-8806095123456">x</a>"#)
-        }));
-        let euronics = Euronics::new(&serve(router).await, "t2-");
-        let watch = online_only_watch("", "8806095999999");
-        let mut reporter = crate::activity::ScanReporter::new("euronics-test", "Euronics", "Gerät", None);
-        // Ohne passenden Link nimmt die Suche den ersten Produktlink aus der ItemList – hier gibt es keinen
-        let err = euronics.check(&watch, &settings(), StoreState::default(), &mut reporter).await.unwrap_err();
-        assert!(matches!(err, CheckError::Lookup { suggestion: None, .. }), "{err:?}");
-
-        let router = Router::new().route("/search", get(|| async {
-            axum::response::Html(jsonld_page(json!({"@type": "ItemList", "itemListElement": [{"url": "/tv/samsung-s93-8806095123456"}]})))
-        }));
-        let euronics = Euronics::new(&serve(router).await, "t3-");
-        let err = euronics.check(&watch, &settings(), StoreState::default(), &mut reporter).await.unwrap_err();
-        match err {
-            CheckError::Lookup { message, suggestion: Some(s) } => {
-                assert!(message.contains("führt EAN 8806095999999 nicht"), "{message}");
-                assert!(s.url.ends_with("/tv/samsung-s93-8806095123456"));
-                assert_eq!(s.title, "Samsung s93");
-            }
+    async fn name_search_skips_bundles_and_checks_gtin() {
+        let euronics = Euronics::new(&serve(tv_router(false)).await, "t2-");
+        // EAN unbekannt bei Euronics-Suche -> Namenssuche liefert Bundle + Gerät; das Gerät hat die passende gtin
+        let w = Watch { name: TV_NAME.into(), ean: "1111111111111".into(), ..Default::default() };
+        match euronics.resolve(&w, &settings(), &[], &StoreState::default()).await {
+            // andere EAN als das Gerät: nur Vorschlag, und zwar das Gerät, nicht das Bundle
+            Err(CheckError::Lookup { suggestion: Some(s), .. }) => assert!(s.url.ends_with(TV_PATH), "{}", s.url),
             other => panic!("{other:?}"),
         }
+        // ohne EAN: Name + Modellnummer eindeutig -> übernommen
+        let w = Watch { name: TV_NAME.into(), ..Default::default() };
+        let r = euronics.resolve(&w, &settings(), &[], &StoreState::default()).await.unwrap();
+        assert_eq!((r.path.as_str(), r.gtin.as_str()), (TV_PATH, TV_EAN));
+        // andere Modellnummer -> nichts
+        let w = Watch { name: "Samsung GQ55S95HFTXZG".into(), ..Default::default() };
+        assert!(matches!(euronics.resolve(&w, &settings(), &[], &StoreState::default()).await, Err(CheckError::Lookup { suggestion: None, .. })));
     }
 
     #[tokio::test]
-    async fn falls_back_to_name_search() {
-        let router = Router::new()
-            .route("/search", get(|Query(q): Query<HashMap<String, String>>| async move {
-                axum::response::Html(match q["sSearch"].as_str() {
-                    "4548736146000" => "<html>Keine Treffer</html>".to_string(),
-                    _ => r#"<a href="/audio/sony-wh-1000xm4-4548736112345">a</a>
-                            <a href="/audio/sony-wh-1000xm6-kopfhoerer-schwarz-4548736199999">b</a>"#.to_string(),
-                })
-            }))
-            .route("/audio/sony-wh-1000xm6-kopfhoerer-schwarz-4548736199999", get(|| async { axum::response::Html(product_html("Sony WH-1000XM6", "349.00")) }));
-        let euronics = Euronics::new(&serve(router).await, "t6-");
+    async fn blocked_search_is_reported_but_given_url_still_works() {
+        let euronics = Euronics::new(&serve(tv_router(true)).await, "t3-");
         let mut reporter = crate::activity::ScanReporter::new("euronics-test", "Euronics", "Gerät", None);
-        // EAN unbekannt, Name passt eindeutig (Modellnummer) -> wird trotz anderer EAN geprüft
-        let mut watch = online_only_watch("", "4548736146000");
-        watch.name = "Sony WH-1000XM6 Kopfhörer".into();
-        let (result, state) = euronics.check(&watch, &settings(), StoreState::default(), &mut reporter).await.unwrap();
-        assert_eq!(result.price, Some(349.0));
-        assert_eq!(state.meta_str("product_path"), Some("audio/sony-wh-1000xm6-kopfhoerer-schwarz-4548736199999"));
-        // Nur der Name, keine EAN
-        watch.ean = String::new();
-        let (result, _) = euronics.check(&watch, &settings(), StoreState::default(), &mut reporter).await.unwrap();
-        assert_eq!(result.price, Some(349.0));
-        // Andere Modellnummer -> nicht gefunden
-        watch.name = "Sony WH-1000XM5".into();
+        let mut watch = online_only_watch("", TV_EAN);
+        watch.name = TV_NAME.into();
         let err = euronics.check(&watch, &settings(), StoreState::default(), &mut reporter).await.unwrap_err();
-        assert!(matches!(err, CheckError::Lookup { suggestion: None, .. }), "{err:?}");
+        match &err {
+            CheckError::Lookup { message, .. } => assert!(message.contains("Bot-Sperre") && message.contains("Euronics-Link"), "{message}"),
+            other => panic!("{other:?}"),
+        }
+        // Produktseiten sind nicht gesperrt: mit eingetragener URL klappt die Prüfung
+        let watch = online_only_watch(&format!("https://www.euronics.de/{TV_PATH}"), TV_EAN);
+        let (result, state) = euronics.check(&watch, &settings(), StoreState::default(), &mut reporter).await.unwrap();
+        assert_eq!((result.price, result.ean.as_str()), (Some(1799.0), TV_EAN));
+        assert_eq!(state.meta_str("gtin"), Some(TV_EAN));
+        assert!(is_waf_challenge(405, "<script src=\"https://a.token.awswaf.com/challenge.js\">"));
+        assert!(!is_waf_challenge(200, &real_product_html("x", "1", "1", "1")));
+    }
+
+    #[tokio::test]
+    async fn identify_reads_manufacturer_ean_from_product_page() {
+        let base = serve(tv_router(true)).await;
+        let euronics = Euronics::new(&base, "t5-");
+        // Markt-URL: Marktteil fällt weg, die EAN kommt von der Produktseite (gtin), nicht aus dem Pfad
+        let id = euronics.identify(&format!("https://www.euronics.de/achern-schindler/{TV_PATH}")).await.unwrap();
+        assert!(id.query.ends_with(TV_PATH) && !id.query.contains("achern"), "{}", id.query);
+        assert_eq!(id.ean, TV_EAN);
+        assert!(matches!(euronics.identify("https://www.euronics.de/tv-und-audio").await, Err(ResolveError::Invalid(_))));
     }
 
     #[tokio::test]
     async fn locate_reports_confidence_and_rediscovers_after_a_week() {
-        let router = Router::new()
-            .route("/search", get(|Query(q): Query<HashMap<String, String>>| async move {
-                axum::response::Html(match q["sSearch"].as_str() {
-                    "0195950543742" => r#"<a href="/audio/airpods-pro-3-0195950543742">a</a>"#.to_string(),
-                    _ => jsonld_page(json!({"@type": "ItemList", "itemListElement": [{"url": "/tv/samsung-gq65s93f-8806095123456"}]})),
-                })
-            }))
-            .route("/audio/airpods-pro-3-0195950543742", get(|| async { axum::response::Html(product_html("AirPods Pro 3", "219.00")) }));
-        let euronics = Euronics::new(&serve(router).await, "t7-");
+        let euronics = Euronics::new(&serve(tv_router(false)).await, "t7-");
         let settings = settings();
-        let w = Watch { name: "AirPods Pro 3".into(), ean: "0195950543742".into(), ..Default::default() };
-        let hit = euronics.locate(&w, &settings).await.unwrap().unwrap();
-        assert_eq!(hit.confidence, Confidence::Ean);
-        assert!(hit.query.ends_with("/audio/airpods-pro-3-0195950543742"));
-        // Händler-Variante: nur als Vorschlag
-        let w = Watch { name: "Samsung GQ65S94F".into(), ean: "8806095999999".into(), ..Default::default() };
-        let hit = euronics.locate(&w, &settings).await.unwrap().unwrap();
-        assert_eq!(hit.confidence, Confidence::Variant);
-
         // Gemerkte Zuordnung gilt eine Woche, danach wird neu gesucht
-        let w = online_only_watch("", "0195950543742");
+        let mut w = online_only_watch("", TV_EAN);
+        w.name = TV_NAME.into();
         let mut reporter = crate::activity::ScanReporter::new("euronics-test", "Euronics", "Gerät", None);
         let (_, mut state) = euronics.check(&w, &settings, StoreState::default(), &mut reporter).await.unwrap();
         assert!(Euronics::cached(&w, &state));

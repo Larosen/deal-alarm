@@ -45,6 +45,8 @@ pub struct Article {
     pub webcode: String,
     pub ean: String,
     pub url: String,
+    /// Hersteller-Artikelnummer (z. B. „GQ65S95HFTXZG“), für den Namensabgleich
+    pub mpn: String,
 }
 
 pub struct Expert {
@@ -71,6 +73,7 @@ fn article_info(article: &Value) -> Article {
         },
         ean: article["internationalArticleNumber"].as_str().unwrap_or("").to_string(),
         url: article["link"].as_str().map(|l| format!("https://www.expert.de{l}")).unwrap_or_default(),
+        mpn: article["manufacturerPartNumber"].as_str().unwrap_or("").to_string(),
     }
 }
 
@@ -194,7 +197,35 @@ impl Expert {
         serde_json::from_str(&text).map_err(|e| e.to_string())
     }
 
+    /// Artikelsuche wie das Suchfeld auf expert.de (`/api/search/suggests/article`), Rückfall auf die
+    /// ältere Schnittstelle `/api/search/suggest`. Laut Shop-Bericht (28.11.2026) liefert die ältere zu
+    /// „GQ65S95HFTXZG“ den 55-Zoll-Artikel – deshalb wird jeder Treffer per Name/Modellnummer geprüft.
     pub async fn search_articles(&self, term: &str) -> Result<Vec<Article>, String> {
+        match self.suggest_articles(term).await {
+            Ok(list) if !list.is_empty() => Ok(list),
+            _ => self.search_articles_legacy(term).await,
+        }
+    }
+
+    async fn suggest_articles(&self, term: &str) -> Result<Vec<Article>, String> {
+        let response = self
+            .client
+            .get(format!("{}/api/search/suggests/article", self.api))
+            .query(&[("q", term), ("storeId", ONLINE_STORE), ("noArticles", "false")])
+            .timeout(Duration::from_secs(20))
+            .send()
+            .await
+            .map_err(|e| e.to_string())?
+            .error_for_status()
+            .map_err(|e| e.to_string())?;
+        let data: Value = Self::json_body(response).await?;
+        Ok(data["articleSuggest"]
+            .as_array()
+            .map(|list| list.iter().map(|entry| article_info(&entry["article"])).filter(|a| !a.webcode.is_empty()).collect())
+            .unwrap_or_default())
+    }
+
+    async fn search_articles_legacy(&self, term: &str) -> Result<Vec<Article>, String> {
         let response = self
             .client
             .get(format!("{}/api/search/suggest", self.api))
@@ -237,7 +268,8 @@ impl Expert {
     /// Bester zum Namen passender Artikel der expert-Suche (Modellnummer muss übereinstimmen).
     pub async fn find_by_name(&self, name: &str) -> Result<Option<Article>, String> {
         let hits = self.search_articles(name).await?;
-        Ok(best_name_match(name, hits.iter().map(|a| a.title.as_str())).map(|(i, _)| hits[i].clone()))
+        let labels: Vec<String> = hits.iter().map(|a| format!("{} {}", a.title, a.mpn)).collect();
+        Ok(best_name_match(name, labels.iter().map(String::as_str)).map(|(i, _)| hits[i].clone()))
     }
 
     /// Löst URL, Webcode, EAN oder Suchbegriff (erster Treffer) zu Produktinfos auf.
@@ -687,6 +719,31 @@ mod tests {
         let mut reporter = crate::activity::ScanReporter::new("expert-test", "expert", "x", None);
         let (result, _) = expert.check(&watch, &Settings::default(), StoreState::default(), &mut reporter).await.unwrap();
         assert!(result.error.is_none() && !result.available && result.detail.contains("Nicht im expert-Sortiment"));
+    }
+
+    #[tokio::test]
+    async fn name_search_rejects_wrong_size_from_legacy_api() {
+        // Wie am 28.11.2026: die alte Suche liefert zu GQ65S95HFTXZG den 55-Zoll-Artikel, die neue den richtigen
+        let router = Router::new()
+            .route("/api/search/suggest", get(|| async {
+                Json(json!({"articleSuggest": [{"article": {"webcode": "11128956771", "title": "GQ55S95HFTXZG S95H Vision AI Smart TV (2026) OLED TV",
+                    "manufacturerPartNumber": "GQ55S95HFTXZG", "internationalArticleNumber": "8806099134778", "link": "/p/11128956771.html"}}]}))
+            }))
+            .route("/api/search/suggests/article", get(|Query(q): Query<HashMap<String, String>>| async move {
+                assert_eq!(q.get("noArticles").map(String::as_str), Some("false"));
+                Json(json!({"articleSuggest": [{"article": {"webcode": "11128967771", "title": "GQ65S95HFTXZG S95H Vision AI Smart TV (2026) OLED TV",
+                    "manufacturerPartNumber": "GQ65S95HFTXZG", "internationalArticleNumber": "8806099134839", "link": "/p/11128967771.html"}}]}))
+            }));
+        let expert = Expert::new(&serve(router).await, "expert-test-6");
+        let hit = expert.find_by_name("Samsung GQ65S95HFTXZG S95H Vision AI Smart TV (2026) OLED, 65\"").await.unwrap().unwrap();
+        assert_eq!((hit.webcode.as_str(), hit.ean.as_str()), ("11128967771", "8806099134839"));
+
+        // Nur die alte Schnittstelle verfügbar und die liefert die falsche Größe -> nichts
+        let router = Router::new().route("/api/search/suggest", get(|| async {
+            Json(json!({"articleSuggest": [{"article": {"webcode": "11128956771", "title": "GQ55S95HFTXZG S95H", "manufacturerPartNumber": "GQ55S95HFTXZG", "link": "/p/1.html"}}]}))
+        }));
+        let expert = Expert::new(&serve(router).await, "expert-test-7");
+        assert!(expert.find_by_name("Samsung GQ65S95HFTXZG").await.unwrap().is_none());
     }
 
     #[tokio::test]
