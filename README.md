@@ -23,9 +23,8 @@ und durchsucht auf Wunsch alle expert-Filialen inkl. Direktabzug/Aktionspreis un
 - **Euronics & media@home**: Onlineshop und **jeder Markt einzeln**
   - Produkt-URL (Onlineshop oder ein Markt) oder automatische Suche; ob es das richtige Gerät ist, entscheidet die
     Hersteller-EAN auf der Produktseite (die Zahl am Ende der Euronics-URL ist die Euronics-Artikelnummer)
-  - Die **Suche** auf euronics.de liegt hinter einer Bot-Sperre (AWS WAF), Produkt- und Marktseiten nicht. Ist die
-    Suche gesperrt, wird der Euronics-Artikel über das Euronics-Angebot bei idealo gefunden; sonst Euronics-Link beim
-    Gerät eintragen oder in den Einstellungen das Cookie `aws-waf-token` aus dem eigenen Browser hinterlegen
+  - Gesucht wird über die Live-Suche des Suchfelds (`/ajax_search`); die normale Suchseite liegt hinter einer
+    Bot-Sperre (AWS WAF). Ist auch die Live-Suche gesperrt, den Euronics-Link beim Gerät eintragen
   - **Händlerverzeichnis mit allen 361 Shops** (300 euronics.de, 61 media@home) aus der Euronics-Händlersuche,
     wöchentlich aktualisiert; optional nur Märkte im Umkreis deiner PLZ
   - eigene Märkte zusätzlich eintragbar, z. B. `https://www.euronics.de/hamburg-buddenhagen`
@@ -42,6 +41,8 @@ und durchsucht auf Wunsch alle expert-Filialen inkl. Direktabzug/Aktionspreis un
 - **mydealz**: Stichwortsuche nach dem Gerät (Marke + Serie, z. B. „Samsung S95H“, oder eigener Suchbegriff). Es zählen
   nur aktuelle, nicht abgelaufene Deals, deren Titel zum Gerät passt (Modell-/Serienbezeichnung, keine andere
   Bildschirmgröße); optional mit Mindest-Temperatur. Tabelle „Alle Deals“.
+  Hinweis: mydealz schließt die Suchseite (`/search`) in seiner robots.txt für automatische Abrufe aus. Der
+  Deal-Alarm sucht deshalb höchstens einmal pro Stunde und Gerät; wer das nicht möchte, schaltet mydealz pro Gerät ab.
 - Bei bestehenden Geräten werden idealo, MediaMarkt, Saturn und mydealz beim ersten Start einmalig eingeschaltet.
 - **Amazon** (amazon.de): ASIN, Produkt-URL oder Suche über die EAN, sonst über den Namen
   - **Amazon Warehouse** (Gebrauchtware) mit Mindestzustand (*Wie neu*, *Sehr gut*, *Gut*, *Akzeptabel*)

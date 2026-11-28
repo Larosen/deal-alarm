@@ -36,8 +36,6 @@ pub struct Settings {
     pub euronics_use_directory: bool,
     /// zusätzliche Markt-URLs, eine pro Zeile
     pub euronics_stores: String,
-    /// optional: Cookie aus dem eigenen Browser (`aws-waf-token=…`) für die Euronics-Suche, die hinter einer Bot-Sperre liegt
-    pub euronics_cookie: String,
     /// Amazon blockt schnell – bewusst langsam
     pub amazon_rate_per_min: i64,
     /// idealo (Preisvergleich) – eine Anfrage pro Prüfung
@@ -68,7 +66,6 @@ impl Default for Settings {
             euronics_stores_per_cycle: 0,
             euronics_use_directory: true,
             euronics_stores: String::new(),
-            euronics_cookie: String::new(),
             amazon_rate_per_min: 4,
             idealo_rate_per_min: 10,
             mediamarkt_rate_per_min: 10,

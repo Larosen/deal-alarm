@@ -205,7 +205,7 @@ async fn json_body(request: Request) -> Result<Value, ApiError> {
 fn merge_settings(current: &Settings, body: &Value) -> Result<Settings, ApiError> {
     let mut merged = serde_json::to_value(current).unwrap();
     for (key, value) in body.as_object().into_iter().flatten() {
-        if (key == "ntfy_token" || key == "euronics_cookie") && value == TOKEN_MASK {
+        if key == "ntfy_token" && value == TOKEN_MASK {
             continue;
         }
         if let Some(existing) = merged.get(key).cloned() {
@@ -263,9 +263,6 @@ async fn get_state(State(app): State<AppState>) -> ApiResult {
     let mut data = serde_json::to_value(&state).unwrap();
     if !state.settings.ntfy_token.is_empty() {
         data["settings"]["ntfy_token"] = json!(TOKEN_MASK);
-    }
-    if !state.settings.euronics_cookie.is_empty() {
-        data["settings"]["euronics_cookie"] = json!(TOKEN_MASK);
     }
     data["scheduler"]["running"] = json!(app.engine.is_running());
     data["activity"] = app.engine.status();
@@ -432,6 +429,18 @@ async fn euronics_preview(State(app): State<AppState>, request: Request) -> ApiR
     })))
 }
 
+/// Doppelte Treffer zusammenfassen: expert führt denselben Artikel teils unter mehreren
+/// Artikelnummern – die Liste soll ihn nur einmal zeigen (gleiche EAN, sonst gleicher Titel).
+fn dedupe_hits(hits: Vec<shops::Hit>) -> Vec<shops::Hit> {
+    let mut seen = std::collections::HashSet::new();
+    hits.into_iter()
+        .filter(|h| {
+            let key = if h.ean.trim().is_empty() { format!("t:{}", h.title.trim().to_lowercase()) } else { format!("e:{}", h.ean.trim_start_matches('0')) };
+            seen.insert(key)
+        })
+        .collect()
+}
+
 /// Ordnet eine Eingabe (URL eines Shops, EAN oder Suchbegriff) einem Artikel in allen Quellen zu.
 async fn resolve_article(Query(q): Query<HashMap<String, String>>) -> ApiResult {
     let query = q.get("q").map(|s| s.trim().to_string()).unwrap_or_default();
@@ -445,7 +454,7 @@ async fn resolve_article(Query(q): Query<HashMap<String, String>>) -> ApiResult 
         for source in sources {
             if let Some(result) = source.search(&query).await {
                 let hits = result.map_err(|e| ApiError(StatusCode::BAD_GATEWAY, format!("Suche fehlgeschlagen: {e}")))?;
-                return Ok(Json(json!({"results": hits.into_iter().take(10).collect::<Vec<_>>()})));
+                return Ok(Json(json!({"results": dedupe_hits(hits).into_iter().take(10).collect::<Vec<_>>()})));
             }
         }
         return Ok(Json(json!({"results": []})));
@@ -722,6 +731,21 @@ mod tests {
         let (status, err) = call(&h.app, "GET", "/api/article/resolve?q=https%3A%2F%2Fwww.amazon.de%2Fgp%2Fhelp", None, None).await;
         assert_eq!(status, 400);
         assert!(err["error"].as_str().unwrap().contains("ASIN"));
+    }
+
+    #[test]
+    fn search_hits_are_deduplicated() {
+        let hit = |t: &str, e: &str, q: &str| shops::Hit { title: t.into(), ean: e.into(), query: q.into(), source: "expert".into() };
+        let hits = vec![
+            hit("Apple AirPods Pro 3", "0195950543742", "/a"),
+            hit("Apple AirPods Pro 3", "195950543742", "/b"),
+            hit("Apple AirPods Pro 3", "0195950543742", "/c"),
+            hit("Ohne EAN", "", "/d"),
+            hit("ohne ean", "", "/e"),
+            hit("Apple AirPods 4", "0195950000000", "/f"),
+        ];
+        let out = dedupe_hits(hits);
+        assert_eq!(out.iter().map(|h| h.query.as_str()).collect::<Vec<_>>(), ["/a", "/d", "/f"]);
     }
 
     #[test]

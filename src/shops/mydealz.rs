@@ -23,9 +23,11 @@ use std::sync::{Arc, OnceLock};
 use std::time::Duration;
 
 pub const BASE: &str = "https://www.mydealz.de";
+/// Abstand zwischen zwei Suchen je Gerät (Stunden)
+pub const SEARCH_EVERY_HOURS: f64 = 1.0;
 
 /// Ein Deal aus der Suche.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct Deal {
     pub id: String,
     pub title: String,
@@ -210,14 +212,25 @@ impl Source for Mydealz {
         &self,
         watch: &Watch,
         settings: &Settings,
-        _state: StoreState,
+        state: StoreState,
         progress: &mut crate::activity::ScanReporter,
     ) -> Result<(ShopResult, StoreState), CheckError> {
         let cfg = watch.source("mydealz");
         let term = if cfg.query.trim().is_empty() { search_term(&watch.name) } else { cfg.query.trim().to_string() };
         let limiter = self.limiter(settings);
         limiter.start_scan();
-        let deals = self.search(&limiter, &term).await?;
+        // Höchstens eine Suche je Gerät und Stunde (mydealz schließt /search in der robots.txt aus) –
+        // dazwischen wird das letzte Suchergebnis erneut ausgewertet.
+        let cached: Option<Vec<Deal>> = state
+            .meta_str("fetched_at")
+            .filter(|t| crate::util::age_hours(t) < SEARCH_EVERY_HOURS)
+            .filter(|_| state.meta_str("search_term") == Some(term.as_str()))
+            .and_then(|_| state.meta.get("deals").cloned())
+            .and_then(|v| serde_json::from_value(v).ok());
+        let (deals, fetched_at) = match cached {
+            Some(d) => (d, state.meta_str("fetched_at").unwrap_or_default().to_string()),
+            None => (self.search(&limiter, &term).await?, now_iso()),
+        };
         let max_age = cfg.opt_f64("max_age_days", 14.0).max(1.0);
         let now = chrono::Utc::now().timestamp();
         let matching: Vec<&Deal> = deals
@@ -247,6 +260,8 @@ impl Source for Mydealz {
             state.stores.insert(format!("deal:{}", d.id), StoreEntry { name, checked: checked.clone(), coordinates: None, offer: Some(offer) });
         }
         state.meta.insert("search_term".into(), json!(term));
+        state.meta.insert("fetched_at".into(), json!(fetched_at));
+        state.meta.insert("deals".into(), json!(deals));
 
         let offers = self.filter_offers(crate::scan::fresh_offers(&state, f64::INFINITY), watch, settings, None);
         let best = offers.first().cloned();
@@ -335,8 +350,11 @@ mod tests {
             article("13", "Samsung S95H 65 Zoll 1.299€", 1299.0, 50.0, false, now - 40 * 86400),   // zu alt
             article("14", "Samsung GQ65S95HFTXZG bei Otto", 1449.0, 5.0, false, now - 7200),
         );
+        let calls = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
+        let counter = calls.clone();
         let router = Router::new().route("/search", get(move |Query(q): Query<HashMap<String, String>>| {
             let page = page.clone();
+            counter.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
             async move {
                 assert_eq!(q["q"], "Samsung S95H");
                 AxHtml(page)
@@ -355,6 +373,11 @@ mod tests {
         let (result, state) = md.check(&w, &settings, StoreState::default(), &mut reporter).await.unwrap();
         assert_eq!(result.price, Some(1449.0));
         assert_eq!(state.stores.len(), 2, "nur Deal 10 und 14 passen");
+        // innerhalb einer Stunde keine neue Suche: das gemerkte Ergebnis wird neu ausgewertet
+        let before = calls.load(std::sync::atomic::Ordering::SeqCst);
+        let (again, _) = md.check(&w, &settings, state.clone(), &mut reporter).await.unwrap();
+        assert_eq!(again.price, Some(1449.0));
+        assert_eq!(calls.load(std::sync::atomic::Ordering::SeqCst), before);
         // Mindest-Temperatur 100° -> nur Deal 10
         w.sources.get_mut("mydealz").unwrap().options = json!({"min_temperature": 100}).as_object().unwrap().clone();
         let (result, _) = md.check(&w, &settings, StoreState::default(), &mut reporter).await.unwrap();

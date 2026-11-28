@@ -245,19 +245,6 @@ impl Idealo {
         Ok(search_links(&page, &self.base))
     }
 
-    /// Link zum Angebot eines bestimmten Händlers (z. B. „euronics“) über die idealo-Angebotsliste:
-    /// die Weiterleitung wird verfolgt, geliefert wird die Ziel-URL ohne Parameter – nur wenn sie
-    /// beim Händler (`host_contains`) landet. Hilft, wo die Suche des Händlers gesperrt ist.
-    pub async fn merchant_url(&self, watch: &Watch, settings: &Settings, shop_contains: &str, host_contains: &str) -> Option<String> {
-        let limiter = self.limiter(settings.idealo_rate_per_min);
-        let url = self.resolve_url(watch, &limiter, &StoreState::default()).await.ok()?;
-        let (page, _) = self.fetch(&limiter, &url, &[]).await.ok()??;
-        let offer = parse_offers(&page, &self.base).into_iter().find(|o| o.shop.to_lowercase().contains(shop_contains) && !o.link.is_empty())?;
-        let (_, target) = self.fetch(&limiter, &offer.link, &[]).await.ok()??;
-        let target_url = reqwest::Url::parse(&target).ok()?;
-        target_url.host_str()?.contains(host_contains).then(|| format!("{}://{}{}", target_url.scheme(), target_url.host_str().unwrap_or(""), target_url.path()))
-    }
-
     /// Produkt-URL: hinterlegt, sonst über EAN-Suche, sonst über Namenssuche.
     async fn resolve_url(&self, watch: &Watch, limiter: &AdaptiveLimiter, state: &StoreState) -> Result<String, CheckError> {
         self.find_url(watch, limiter, state).await.map(|(url, _)| url)
@@ -401,7 +388,7 @@ impl Source for Idealo {
                 price: o.price,
                 shipping: o.total.map(|t| ((t - o.price) * 100.0).round() / 100.0),
                 total_price: total,
-                availability: Some(format!("bei {} (über idealo)", o.shop)),
+                availability: Some(format!("bei {} (laut idealo, kann veraltet sein)", o.shop)),
                 title: Some(title.clone()),
                 url: Some(if o.link.is_empty() { url.clone() } else { o.link.clone() }),
                 ..Default::default()
