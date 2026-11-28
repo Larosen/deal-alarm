@@ -103,7 +103,7 @@ fn is_product_url(url: &str) -> bool {
 fn is_bundle(title: &str, wanted: &str) -> bool {
     let t = title.to_lowercase();
     let w = wanted.to_lowercase();
-    ["inkl.", "bundle", "+ "].iter().any(|k| t.contains(k) && !w.contains(k))
+    ["inkl.", "inkl ", "bundle"].iter().any(|k| t.contains(k) && !w.contains(k))
 }
 
 pub struct MediaSaturn {

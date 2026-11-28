@@ -399,25 +399,13 @@ fn product_links(page: &str, base_url: &str) -> Vec<String> {
 /// (Modellnummer stimmt überein, die meisten übrigen Wörter auch).
 const NAME_AUTO_ACCEPT: f64 = 0.75;
 
-/// HTTP-Client mit dem Cookie aus den Einstellungen (nur für die Suche).
-fn search_client(cookie: &str) -> reqwest::Client {
-    use reqwest::header::{HeaderMap, HeaderValue, ACCEPT, ACCEPT_LANGUAGE, COOKIE, USER_AGENT};
-    let mut headers = HeaderMap::new();
-    headers.insert(USER_AGENT, HeaderValue::from_static(super::common::USER_AGENT));
-    headers.insert(ACCEPT_LANGUAGE, HeaderValue::from_static("de-DE,de;q=0.9,en;q=0.5"));
-    headers.insert(ACCEPT, HeaderValue::from_static("text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"));
-    if let Ok(v) = HeaderValue::from_str(cookie) {
-        headers.insert(COOKIE, v);
-    }
-    reqwest::Client::builder().default_headers(headers).connect_timeout(Duration::from_secs(15)).build().expect("HTTP-Client")
-}
-
 /// Kennzeichen von Fehlermeldungen, die von der AWS-WAF-Sperre stammen.
 const WAF_PREFIX: &str = "[WAF]";
 
-/// Challenge-Seite der AWS WAF (Stand 28.11.2026: HTTP 405, ~2 KB, Skripte von *.awswaf.com).
+/// Challenge-Seite der AWS WAF (Stand 28.11.2026: HTTP 405, ~2 KB). Normale Seiten binden das
+/// WAF-Skript ebenfalls ein – entscheidend sind der Status oder die kleine Seite mit dem Prüftext.
 pub fn is_waf_challenge(status: u16, body: &str) -> bool {
-    (status == 405 || status == 202 || body.len() < 20_000) && (body.contains("awswaf") || body.contains("ob Sie ein Mensch sind"))
+    status == 405 || (body.len() < 20_000 && body.contains("ob Sie ein Mensch sind"))
 }
 
 /// Ergebnis der Zuordnung eines Geräts zu einem Euronics-Produkt.
@@ -430,11 +418,34 @@ pub struct Resolved {
     pub confidence: Confidence,
 }
 
-/// Bundles („… inkl. Soundbar“) sind nicht das gesuchte Gerät, auch wenn die Modellnummer passt.
-fn is_bundle(title: &str, wanted: &str) -> bool {
+/// Sieht nach Bundle aus („… inkl. HW-B760GF Soundbar“)? Nur ein Hinweis für die Reihenfolge –
+/// ob es das Gerät ist, entscheidet die `gtin` der Produktseite.
+fn looks_like_bundle(title: &str, wanted: &str) -> bool {
     let t = title.to_lowercase();
     let w = wanted.to_lowercase();
-    ["inkl", "bundle", " set ", "+ "].iter().any(|k| t.contains(k) && !w.contains(k))
+    ["inkl.", "inkl ", "bundle"].iter().any(|k| t.contains(k) && !w.contains(k))
+}
+
+/// Treffer der Live-Suche (`/ajax_search`, HTML-Fragment): (URL, Titel), ohne den Link „alle Ergebnisse“.
+pub fn parse_ajax_search(fragment: &str, base_url: &str) -> Vec<(String, String)> {
+    let doc = scraper::Html::parse_fragment(fragment);
+    let link_sel = scraper::Selector::parse("li.result--item a.search-result--link").expect("CSS");
+    let name_sel = scraper::Selector::parse(".entry--name").expect("CSS");
+    let base = reqwest::Url::parse(base_url).ok();
+    let mut out: Vec<(String, String)> = vec![];
+    for a in doc.select(&link_sel) {
+        if a.value().classes().any(|c| c == "entry--all-results-link") {
+            continue;
+        }
+        let Some(href) = a.value().attr("href") else { continue };
+        let Some(url) = base.as_ref().and_then(|b| b.join(href).ok()).map(|u| u.to_string()) else { continue };
+        if url.contains("/search") || out.iter().any(|(u, _)| *u == url) {
+            continue;
+        }
+        let title = a.select(&name_sel).next().map(|n| n.text().collect::<Vec<_>>().join(" ")).unwrap_or_default();
+        out.push((url, title.split_whitespace().collect::<Vec<_>>().join(" ")));
+    }
+    out
 }
 
 pub struct Euronics {
@@ -442,8 +453,6 @@ pub struct Euronics {
     limiter_prefix: String,
     client: reqwest::Client,
     directory: Mutex<Option<(Instant, Arc<Directory>)>>,
-    /// Euronics-Artikel über das idealo-Angebot suchen (aus in Tests mit eigener Basis)
-    idealo_fallback: bool,
 }
 
 impl Default for Euronics {
@@ -472,7 +481,6 @@ impl Euronics {
             limiter_prefix: limiter_prefix.to_string(),
             client: http_client("text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"),
             directory: Mutex::new(None),
-            idealo_fallback: base.trim_end_matches('/') == BASE,
         }
     }
 
@@ -617,19 +625,29 @@ impl Euronics {
         selected
     }
 
-    /// Suchseite im Onlineshop: (Seite, URL nach Weiterleitung), `None` bei Bot-Sperre (AWS WAF).
-    ///
-    /// Die Suche ist bei Euronics hinter der WAF; mit einem Cookie aus dem eigenen Browser
-    /// (Einstellung „Euronics-Suche: Cookie“) geht sie trotzdem.
-    async fn search_page(&self, settings: &Settings, term: &str) -> Result<Option<(String, String)>, CheckError> {
+    /// Suchtreffer (Pfad, Titel) im Onlineshop. Zuerst die Live-Suche des Suchfelds (`/ajax_search`,
+    /// nicht hinter der AWS WAF), sonst die normale Suche. `None`, wenn beides gesperrt ist.
+    async fn search(&self, settings: &Settings, term: &str, stores: &[Market]) -> Result<Option<Vec<(String, String)>>, CheckError> {
+        let ajax_url = format!("{}/ajax_search?sSearch={}", self.base, urlencoding::encode(term));
+        let limiter = self.limiter(settings, &ajax_url);
+        match Self::get(&self.client, &limiter, &ajax_url, true).await {
+            Ok(Some((fragment, final_url))) => {
+                let hits = parse_ajax_search(&fragment, &final_url);
+                // Ein Fragment mit Ergebnisliste (auch leer) ist eine gültige Antwort
+                if !hits.is_empty() || fragment.contains("results--list") || fragment.trim().is_empty() {
+                    return Ok(Some(hits.into_iter().map(|(url, title)| (product_path(&url, stores), title)).collect()));
+                }
+            }
+            Ok(None) => {}
+            Err(FetchError::RateLimited(m)) if !m.starts_with(WAF_PREFIX) => return Err(CheckError::RateLimited(m)),
+            Err(e) => crate::info!("Euronics-Live-Suche nicht nutzbar ({}) – versuche die normale Suche", CheckError::from(e).message()),
+        }
         let search_url = format!("{}/search?sSearch={}", self.base, urlencoding::encode(term));
-        let limiter = self.limiter(settings, &search_url);
-        let cookie = settings.euronics_cookie.trim();
-        let client = if cookie.is_empty() { self.client.clone() } else { search_client(cookie) };
-        match Self::get(&client, &limiter, &search_url, false).await {
-            Ok(page) => Ok(page),
+        match Self::get(&self.client, &limiter, &search_url, false).await {
+            Ok(Some((page, final_url))) => Ok(Some(Self::candidates(&page, &final_url, stores))),
+            Ok(None) => Ok(Some(vec![])),
             Err(FetchError::RateLimited(m)) if m.starts_with(WAF_PREFIX) => {
-                crate::info!("Euronics-Suche: Bot-Sperre (AWS WAF){}", if cookie.is_empty() { "" } else { " – Cookie abgelaufen?" });
+                crate::info!("Euronics-Suche: Bot-Sperre (AWS WAF)");
                 Ok(None)
             }
             Err(e) => Err(e.into()),
@@ -660,7 +678,7 @@ impl Euronics {
             .collect()
     }
 
-    /// Produktpfad aus der hinterlegten URL, per Suche (EAN, dann Name) oder über idealo.
+    /// Produktpfad aus der hinterlegten URL oder per Suche (EAN, dann Name).
     ///
     /// Ob es dasselbe Gerät ist, entscheidet die Hersteller-EAN der Produktseite (`gtin`). Ohne
     /// passende EAN wird ein Treffer nur übernommen, wenn das Gerät keine EAN hat und Name und
@@ -707,10 +725,10 @@ impl Euronics {
 
         if !term.is_empty() {
             tried.push(term.clone());
-            match self.search_page(settings, &term).await? {
+            match self.search(settings, &term, stores).await? {
                 None => blocked = true,
-                Some((page, final_url)) => {
-                    let candidates = Self::candidates(&page, &final_url, stores);
+                Some(mut candidates) => {
+                    candidates.sort_by_key(|(_, t)| looks_like_bundle(t, &watch.name));
                     if !query.is_empty() {
                         // eigener Suchbegriff: erster Treffer
                         if let Some((path, title)) = candidates.into_iter().next() {
@@ -728,7 +746,7 @@ impl Euronics {
                             if product.ean.is_empty() && name_match(&watch.name, &shown) >= super::common::NAME_MATCH_MIN {
                                 return Ok(Resolved { path, gtin: String::new(), title: shown, confidence: Confidence::Name });
                             }
-                            if suggestion.is_none() && !is_bundle(&title, &watch.name) {
+                            if suggestion.is_none() {
                                 suggestion = Some((path, title, product.ean));
                             }
                         }
@@ -740,20 +758,20 @@ impl Euronics {
         if !blocked {
             for name in &names {
                 tried.push(name.clone());
-                let Some((page, final_url)) = self.search_page(settings, name).await? else {
+                let Some(candidates) = self.search(settings, name, stores).await? else {
                     blocked = true;
                     break;
                 };
-                let mut ranked: Vec<((String, String), f64)> = Self::candidates(&page, &final_url, stores)
+                let mut ranked: Vec<((String, String), f64)> = candidates
                     .into_iter()
-                    .filter(|(_, t)| !is_bundle(t, name))
                     .map(|c| {
                         let score = name_match(name, &c.1);
                         (c, score)
                     })
                     .filter(|(_, score)| *score >= super::common::NAME_MATCH_MIN)
                     .collect();
-                ranked.sort_by(|a, b| b.1.total_cmp(&a.1));
+                // beste Übereinstimmung zuerst, Bundles nach hinten
+                ranked.sort_by(|a, b| looks_like_bundle(&a.0 .1, name).cmp(&looks_like_bundle(&b.0 .1, name)).then(b.1.total_cmp(&a.1)));
                 for ((path, title), score) in ranked.into_iter().take(VERIFY) {
                     let product = self.product(settings, &path).await?;
                     let gtin = product.as_ref().map(|p| p.ean.clone()).unwrap_or_default();
@@ -773,27 +791,11 @@ impl Euronics {
             }
         }
 
-        // Suche gesperrt oder erfolglos: Euronics-Angebot bei idealo
-        if self.idealo_fallback && suggestion.is_none() && (blocked || !ean.is_empty()) && query.is_empty() {
-            let idealo = super::idealo::Idealo::default();
-            if let Some(url) = idealo.merchant_url(watch, settings, "euronics", "euronics.de").await {
-                let path = product_path(&url, stores);
-                if let Some(product) = self.product(settings, &path).await? {
-                    if ean.is_empty() || same_ean(&product.ean, &ean) {
-                        crate::info!("Euronics · {}: über das idealo-Angebot zugeordnet: {}", watch.name, product.title);
-                        return Ok(Resolved { path, gtin: product.ean, title: product.title, confidence: Confidence::Ean });
-                    }
-                    suggestion = Some((path, product.title, product.ean));
-                }
-            }
-        }
-
         let Some((path, title, found)) = suggestion else {
             if blocked {
                 return Err(CheckError::lookup(
-                    "Die Euronics-Suche ist durch eine Bot-Sperre (AWS WAF) geschützt und das Gerät war auch über idealo nicht \
-                     zu finden. Bitte den Euronics-Link beim Gerät eintragen (Produkt- und Marktseiten funktionieren) oder in den \
-                     Einstellungen ein Cookie für die Euronics-Suche hinterlegen.",
+                    "Die Euronics-Suche ist gerade durch eine Bot-Sperre (AWS WAF) geschützt. Bitte den Euronics-Link beim Gerät \
+                     eintragen – Produkt- und Marktseiten funktionieren trotzdem.",
                 ));
             }
             return Err(CheckError::lookup(format!(
@@ -1225,6 +1227,58 @@ mod tests {
         assert_eq!(state.meta_str("gtin"), Some(TV_EAN));
         assert!(is_waf_challenge(405, "<script src=\"https://a.token.awswaf.com/challenge.js\">"));
         assert!(!is_waf_challenge(200, &real_product_html("x", "1", "1", "1")));
+    }
+
+    /// Fragment der Live-Suche wie am 28.11.2026 (gekürzt).
+    fn ajax_fragment(base: &str, items: &[(&str, &str)]) -> String {
+        let entries: String = items
+            .iter()
+            .map(|(path, name)| format!(
+                r#"<li class="list--entry block-group result--item"><a class="search-result--link" href="{base}/{path}" title="x">
+                   <span class="entry--media block"><img class="media--image"></span><span class="entry--name block">{name}</span>
+                   <span class="entry--price block"><div class="product--price"><span class="price--default is--nowrap">1.749,00 €</span></div></span></a></li>"#
+            ))
+            .collect();
+        format!(
+            r#"<ul class="results--list">{entries}<li class="list--entry entry--all-results block-group result--item">
+               <a class="search-result--link entry--all-results-link block" href="{base}/search?sSearch=x"><i class="icon--arrow-right"></i> Alle Ergebnisse</a></li></ul>"#
+        )
+    }
+
+    #[test]
+    fn parses_ajax_search_without_all_results_link() {
+        let hits = parse_ajax_search(&ajax_fragment("https://www.euronics.de", &[(TV_PATH, "GQ65S95HFT 163 cm (65\") OLED Vision AI Smart TV graphitschwarz, 4K Ultra HD, 120 Hz, Sprac…")]), "https://www.euronics.de/ajax_search?sSearch=x");
+        assert_eq!(hits.len(), 1);
+        assert_eq!(hits[0].0, format!("https://www.euronics.de/{TV_PATH}"));
+        assert!(hits[0].1.starts_with("GQ65S95HFT 163 cm"));
+        assert!(is_waf_challenge(405, ""));
+        assert!(!is_waf_challenge(200, "<script src=\"https://x.token.awswaf.com/challenge.js\"></script>"), "normale Seite mit WAF-Skript");
+    }
+
+    #[tokio::test]
+    async fn live_search_works_while_search_page_is_blocked() {
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let base = format!("http://{}", listener.local_addr().unwrap());
+        let b = base.clone();
+        let router = tv_router(true).route("/ajax_search", get(move |Query(q): Query<HashMap<String, String>>| {
+            let b = b.clone();
+            async move {
+                axum::response::Html(match q["sSearch"].as_str() {
+                    TV_EAN => ajax_fragment(&b, &[(TV_PATH, "GQ65S95HFT 163 cm (65\") OLED Vision AI Smart TV")]),
+                    _ => ajax_fragment(&b, &[(BUNDLE_PATH, "GQ65S95HFT 163 cm (65\") OLED inkl. HW-B760GF Soundbar"), (TV_PATH, "GQ65S95HFT 163 cm (65\") OLED Vision AI Smart TV")]),
+                })
+            }
+        }));
+        tokio::spawn(async move { axum::serve(listener, router).await.unwrap() });
+        let euronics = Euronics::new(&base, "t8-");
+        // über die EAN
+        let w = Watch { name: TV_NAME.into(), ean: TV_EAN.into(), ..Default::default() };
+        let r = euronics.resolve(&w, &settings(), &[], &StoreState::default()).await.unwrap();
+        assert_eq!((r.path.as_str(), r.gtin.as_str(), r.confidence), (TV_PATH, TV_EAN, Confidence::Ean));
+        // nur über den Namen: Bundle steht vorne, wird aber nach hinten sortiert
+        let w = Watch { name: TV_NAME.into(), ..Default::default() };
+        let r = euronics.resolve(&w, &settings(), &[], &StoreState::default()).await.unwrap();
+        assert_eq!(r.path, TV_PATH);
     }
 
     #[tokio::test]

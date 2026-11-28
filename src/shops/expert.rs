@@ -201,17 +201,28 @@ impl Expert {
     /// ältere Schnittstelle `/api/search/suggest`. Laut Shop-Bericht (28.11.2026) liefert die ältere zu
     /// „GQ65S95HFTXZG“ den 55-Zoll-Artikel – deshalb wird jeder Treffer per Name/Modellnummer geprüft.
     pub async fn search_articles(&self, term: &str) -> Result<Vec<Article>, String> {
-        match self.suggest_articles(term).await {
-            Ok(list) if !list.is_empty() => Ok(list),
-            _ => self.search_articles_legacy(term).await,
+        if let Ok(list) = self.suggest_articles(term, ONLINE_STORE).await {
+            if !list.is_empty() {
+                return Ok(list);
+            }
         }
+        // Mit dem Onlineshop findet die Suche nach einer reinen Modellnummer teils nichts, mit einer Filiale schon
+        // (Shop-Bericht 28.11.2026: „GQ65S95HFTXZG“ leer bei e_2879130, 2 Treffer bei e_1907435)
+        if let Some(branch) = self.list_stores(true).await.into_iter().find(|s| s.id != ONLINE_STORE) {
+            if let Ok(list) = self.suggest_articles(term, &format!("e_{}", branch.exp_id.trim_start_matches("e_"))).await {
+                if !list.is_empty() {
+                    return Ok(list);
+                }
+            }
+        }
+        self.search_articles_legacy(term).await
     }
 
-    async fn suggest_articles(&self, term: &str) -> Result<Vec<Article>, String> {
+    async fn suggest_articles(&self, term: &str, store_id: &str) -> Result<Vec<Article>, String> {
         let response = self
             .client
             .get(format!("{}/api/search/suggests/article", self.api))
-            .query(&[("q", term), ("storeId", ONLINE_STORE), ("noArticles", "false")])
+            .query(&[("q", term), ("storeId", store_id), ("noArticles", "false")])
             .timeout(Duration::from_secs(20))
             .send()
             .await
@@ -731,12 +742,19 @@ mod tests {
             }))
             .route("/api/search/suggests/article", get(|Query(q): Query<HashMap<String, String>>| async move {
                 assert_eq!(q.get("noArticles").map(String::as_str), Some("false"));
+                // wie am 28.11.2026: beim Onlineshop leer, bei einer Filiale der richtige Artikel
+                if q["storeId"] == ONLINE_STORE {
+                    return Json(json!({"articleSuggest": []}));
+                }
                 Json(json!({"articleSuggest": [{"article": {"webcode": "11128967771", "title": "GQ65S95HFTXZG S95H Vision AI Smart TV (2026) OLED TV",
                     "manufacturerPartNumber": "GQ65S95HFTXZG", "internationalArticleNumber": "8806099134839", "link": "/p/11128967771.html"}}]}))
             }));
         let expert = Expert::new(&serve(router).await, "expert-test-6");
         let hit = expert.find_by_name("Samsung GQ65S95HFTXZG S95H Vision AI Smart TV (2026) OLED, 65\"").await.unwrap().unwrap();
         assert_eq!((hit.webcode.as_str(), hit.ean.as_str()), ("11128967771", "8806099134839"));
+        // nur die Modellnummer: Onlineshop leer -> Filiale aus der mitgelieferten Liste
+        let hit = expert.find_by_name("GQ65S95HFTXZG").await.unwrap().unwrap();
+        assert_eq!(hit.webcode, "11128967771");
 
         // Nur die alte Schnittstelle verfügbar und die liefert die falsche Größe -> nichts
         let router = Router::new().route("/api/search/suggest", get(|| async {
