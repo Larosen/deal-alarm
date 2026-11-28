@@ -116,6 +116,9 @@
       </div>
       <div class="row">
         <label>idealo: max. Anfragen/Minute<input name="idealo_rate_per_min" inputmode="numeric"></label>
+        <label>MediaMarkt/Saturn: max. Anfragen/Minute<input name="mediamarkt_rate_per_min" inputmode="numeric"></label>
+      </div>
+      <div class="row">
         <label>Filialpreise gelten max. (Stunden)<input name="price_max_age_hours" inputmode="numeric"></label>
       </div>
       <div id="limiter-info" class="muted small"></div>
@@ -130,6 +133,11 @@
         <code>Buddenhagen | https://www.euronics.de/hamburg-buddenhagen</code>.</p>
       <textarea name="euronics_stores" rows="6" spellcheck="false" placeholder="Zusätzliche Märkte (optional), z. B.&#10;Mein Markt | https://www.euronics.de/ort-haendler"></textarea>
       <div id="stores-preview" class="muted small"></div>
+      <label>Euronics-Suche: Cookie <span class="muted">(optional)</span><input name="euronics_cookie" type="password" autocomplete="off" placeholder="aws-waf-token=…"></label>
+      <p class="hint">Die Suche auf euronics.de liegt hinter einer Bot-Sperre (AWS WAF), Produkt- und Marktseiten nicht.
+        Ohne Cookie findet der Deal-Alarm den Euronics-Artikel über idealo oder du fügst den Euronics-Link beim Gerät ein.
+        Mit Cookie: euronics.de im Browser öffnen, in den Entwicklertools unter „Anwendung → Cookies“ den Wert von
+        <code>aws-waf-token</code> kopieren und hier als <code>aws-waf-token=…</code> eintragen. Er läuft nach einiger Zeit ab.</p>
     </fieldset>
     <p id="settings-error" class="error"></p>
     <div class="dialog-actions">

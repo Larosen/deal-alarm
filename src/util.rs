@@ -52,6 +52,13 @@ pub fn parse_price(value: &str) -> Option<f64> {
     normalized.parse().ok()
 }
 
+/// Erster deutscher Preis in einem Text: „1.929,00 € mit 30 Prozent Einsparungen“ -> 1929.0
+pub fn first_price(text: &str) -> Option<f64> {
+    static R: std::sync::OnceLock<regex::Regex> = std::sync::OnceLock::new();
+    let re = R.get_or_init(|| regex::Regex::new(r"(\d{1,3}(?:\.\d{3})+|\d+),(\d{2})").unwrap());
+    re.captures(text).and_then(|c| parse_price(&format!("{},{}", &c[1], &c[2])))
+}
+
 /// Preis aus einem JSON-Wert (Zahl oder Text).
 pub fn parse_price_value(value: &serde_json::Value) -> Option<f64> {
     match value {
@@ -71,6 +78,10 @@ mod tests {
         assert_eq!(parse_price("199,99"), Some(199.99));
         assert_eq!(parse_price("1299.00"), Some(1299.0));
         assert_eq!(parse_price(""), None);
+        assert_eq!(first_price("1.929,00 € mit 30 Prozent Einsparungen"), Some(1929.0));
+        assert_eq!(first_price("ab 1.699,00 €"), Some(1699.0));
+        assert_eq!(first_price("Preis: 89,90 €"), Some(89.9));
+        assert_eq!(first_price("kein Preis"), None);
         assert_eq!(parse_price_value(&serde_json::json!(249)), Some(249.0));
         assert_eq!(parse_price_value(&serde_json::Value::Null), None);
     }

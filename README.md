@@ -1,7 +1,7 @@
-# 🔔 Deal-Alarm – expert, Euronics, Amazon & idealo
+# 🔔 Deal-Alarm – expert, Euronics, Amazon, MediaMarkt, Saturn & idealo
 
-Überwacht Geräte zyklisch (standardmäßig etwa alle 2 Stunden) bei **expert**, **Euronics/media@home**
-und **Amazon** (inkl. **Amazon Warehouse**) und schickt per [ntfy](https://ntfy.sh) einen **Dealalarm**, sobald ein Gerät zum vorher festgelegten
+Überwacht Geräte zyklisch (standardmäßig etwa alle 2 Stunden) bei **expert**, **Euronics/media@home**,
+**Amazon** (inkl. **Amazon Warehouse**), **MediaMarkt**, **Saturn** und im Preisvergleich **idealo** und schickt per [ntfy](https://ntfy.sh) einen **Dealalarm**, sobald ein Gerät zum vorher festgelegten
 Wunschpreis (oder günstiger) zu haben ist. Bedient wird alles über eine Weboberfläche. Das Programm ist in Rust geschrieben und ein einzelnes,
 kleines Binary (die Weboberfläche und die Händlerlisten sind eingebettet).
 
@@ -21,7 +21,11 @@ und durchsucht auf Wunsch alle expert-Filialen inkl. Direktabzug/Aktionspreis un
   - Vergleichstabelle „Alle Filialpreise“ mit Preis, Versand, Gesamtpreis, Bestand und Prüfzeitpunkt
   - optional Ausstellungsstücke und nur lokal verfügbare Angebote im Umkreis deiner PLZ
 - **Euronics & media@home**: Onlineshop und **jeder Markt einzeln**
-  - Produkt-URL (Onlineshop oder ein Markt) oder Suche über die EAN (wird automatisch übernommen)
+  - Produkt-URL (Onlineshop oder ein Markt) oder automatische Suche; ob es das richtige Gerät ist, entscheidet die
+    Hersteller-EAN auf der Produktseite (die Zahl am Ende der Euronics-URL ist die Euronics-Artikelnummer)
+  - Die **Suche** auf euronics.de liegt hinter einer Bot-Sperre (AWS WAF), Produkt- und Marktseiten nicht. Ist die
+    Suche gesperrt, wird der Euronics-Artikel über das Euronics-Angebot bei idealo gefunden; sonst Euronics-Link beim
+    Gerät eintragen oder in den Einstellungen das Cookie `aws-waf-token` aus dem eigenen Browser hinterlegen
   - **Händlerverzeichnis mit allen 361 Shops** (300 euronics.de, 61 media@home) aus der Euronics-Händlersuche,
     wöchentlich aktualisiert; optional nur Märkte im Umkreis deiner PLZ
   - eigene Märkte zusätzlich eintragbar, z. B. `https://www.euronics.de/hamburg-buddenhagen`
@@ -30,8 +34,12 @@ und durchsucht auf Wunsch alle expert-Filialen inkl. Direktabzug/Aktionspreis un
   Gerätenamen bzw. dem Produkttitel aus einem anderen Shop. Übernommen wird nur ein Treffer, dessen **Modellnummer**
   übereinstimmt (z. B. `WH-1000XM6`, nicht `WH-1000XM4`; Zubehör wie Hüllen wird aussortiert). Ein Gerät kann auch ganz
   ohne EAN nur über den Namen beobachtet werden („per Namenssuche in allen Shops beobachten“ in der Suche).
-- **idealo** (Preisvergleich): Bestpreis über alle Händler – idealo-URL oder automatisch über EAN/Gerätename,
-  eine Anfrage pro Prüfung. Bei bestehenden Geräten wird idealo beim ersten Start einmalig eingeschaltet.
+- **idealo** (Preisvergleich): günstigstes Angebot über alle Händler (Gesamtpreis inkl. Versand), Tabelle „Alle
+  Angebote“ mit allen Händlern, Tiefstpreis der letzten 3 Monate aus dem Preisverlauf; idealo-URL oder automatisch
+  über EAN/Gerätename.
+- **MediaMarkt** und **Saturn**: Onlinepreis, Produkt-URL oder automatisch über EAN/Gerätename (EAN wird auf der
+  Produktseite geprüft). Preise je Markt bietet nur eine Schnittstelle, die ohne Anmeldung gesperrt ist.
+- Bei bestehenden Geräten werden idealo, MediaMarkt und Saturn beim ersten Start einmalig eingeschaltet.
 - **Amazon** (amazon.de): ASIN, Produkt-URL oder Suche über die EAN, sonst über den Namen
   - **Amazon Warehouse** (Gebrauchtware) mit Mindestzustand (*Wie neu*, *Sehr gut*, *Gut*, *Akzeptabel*)
   - Neuware von Amazon, optional auch von Drittanbietern

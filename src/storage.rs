@@ -36,10 +36,14 @@ pub struct Settings {
     pub euronics_use_directory: bool,
     /// zusätzliche Markt-URLs, eine pro Zeile
     pub euronics_stores: String,
+    /// optional: Cookie aus dem eigenen Browser (`aws-waf-token=…`) für die Euronics-Suche, die hinter einer Bot-Sperre liegt
+    pub euronics_cookie: String,
     /// Amazon blockt schnell – bewusst langsam
     pub amazon_rate_per_min: i64,
     /// idealo (Preisvergleich) – eine Anfrage pro Prüfung
     pub idealo_rate_per_min: i64,
+    /// MediaMarkt und Saturn (je Domain)
+    pub mediamarkt_rate_per_min: i64,
     /// ältere Filialpreise zählen nicht mehr für den Dealalarm
     pub price_max_age_hours: i64,
 }
@@ -62,8 +66,10 @@ impl Default for Settings {
             euronics_stores_per_cycle: 0,
             euronics_use_directory: true,
             euronics_stores: String::new(),
+            euronics_cookie: String::new(),
             amazon_rate_per_min: 4,
             idealo_rate_per_min: 10,
+            mediamarkt_rate_per_min: 10,
             price_max_age_hours: 24,
         }
     }
@@ -184,9 +190,11 @@ pub fn migrate(mut state: Value) -> Value {
             }
             obj.insert("sources".into(), Value::Object(sources));
         }
-        // idealo kam später dazu: bei bestehenden Geräten einmalig einschalten (danach zählt die Auswahl des Nutzers)
+        // Später hinzugekommene Quellen bei bestehenden Geräten einmalig einschalten (danach zählt die Auswahl des Nutzers)
         if let Some(sources) = obj.get_mut("sources").and_then(Value::as_object_mut) {
-            sources.entry("idealo").or_insert_with(|| json!({"enabled": true, "query": "", "options": {}}));
+            for id in ["idealo", "mediamarkt", "saturn"] {
+                sources.entry(id).or_insert_with(|| json!({"enabled": true, "query": "", "options": {}}));
+            }
         }
         if let Some(prices) = obj.get_mut("store_prices").and_then(Value::as_object_mut) {
             for state in prices.values_mut() {
@@ -352,6 +360,7 @@ mod tests {
         ]});
         let state: State = serde_json::from_value(migrate(old)).unwrap();
         assert!(state.watches[0].source("idealo").enabled);
+        assert!(state.watches[0].source("mediamarkt").enabled && state.watches[0].source("saturn").enabled);
         assert!(state.watches[0].source("expert").enabled);
         // Wer idealo bewusst ausgeschaltet hat, behält das
         assert!(!state.watches[1].source("idealo").enabled);

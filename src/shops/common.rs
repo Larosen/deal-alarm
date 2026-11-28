@@ -91,9 +91,11 @@ pub fn name_tokens(text: &str) -> Vec<String> {
 
 /// Wie gut passt ein Treffer (`candidate`) zum gesuchten Gerätenamen? 0.0 – 1.0.
 ///
-/// Modellbezeichnungen (Wörter mit Ziffern, z. B. „WH-1000XM5“ → „1000xm5“, „S94“) müssen
-/// **alle** im Treffer vorkommen, sonst ist es ein anderes Gerät (z. B. S93 statt S94) und das
-/// Ergebnis ist 0. Ansonsten zählt der Anteil der gefundenen übrigen Wörter.
+/// Modellbezeichnungen (Wörter aus Buchstaben **und** Ziffern, z. B. „WH-1000XM5“ → „1000xm5“,
+/// „GQ65S95HFTXZG“) müssen **alle** im Treffer vorkommen, sonst ist es ein anderes Gerät (S93 statt
+/// S94, 55 statt 65 Zoll) und das Ergebnis ist 0. Länderkürzel am Ende zählen nicht: „GQ65S95HFTXZG“
+/// passt zu „GQ65S95HFT“. Reine Zahlen (65, 120, 2026) sind nur Pflicht, wenn der Name gar keine
+/// Modellbezeichnung enthält (z. B. „AirPods Pro 3“), sonst zählen sie wie normale Wörter.
 pub fn name_match(wanted: &str, candidate: &str) -> f64 {
     let cand = name_tokens(candidate);
     let cand_joined: String = cand.concat();
@@ -101,10 +103,19 @@ pub fn name_match(wanted: &str, candidate: &str) -> f64 {
     if wanted.is_empty() || cand.is_empty() {
         return 0.0;
     }
-    let (models, words): (Vec<&String>, Vec<&String>) = wanted.iter().partition(|t| t.chars().any(|c| c.is_ascii_digit()));
-    // Modellnummer: als eigenes Wort oder zusammengeschrieben („WH-1000XM5“ vs. „WH1000XM5“)
-    // (kurze Angaben wie „3“ nur als eigenes Wort, sonst passt „3“ auch zu „2023“)
-    if !models.iter().all(|m| cand.iter().any(|c| c == *m) || (m.len() >= 4 && cand_joined.contains(m.as_str()))) {
+    let has_digit = |t: &str| t.chars().any(|c| c.is_ascii_digit());
+    let mixed = |t: &str| has_digit(t) && t.chars().any(|c| c.is_alphabetic());
+    let has_mixed = wanted.iter().any(|t| mixed(t));
+    let (models, words): (Vec<&String>, Vec<&String>) =
+        wanted.iter().partition(|t| if has_mixed { mixed(t) } else { has_digit(t) });
+    let model_found = |m: &str| {
+        cand.iter().any(|c| c == m)
+            // zusammengeschrieben („WH-1000XM5“ vs. „WH1000XM5“); kurze Angaben wie „3“ nur als eigenes Wort
+            || (m.len() >= 4 && cand_joined.contains(m))
+            // gleiche Modellnummer mit/ohne Länder- bzw. Farbkürzel („GQ65S95HFTXZG“ ≙ „GQ65S95HFT“)
+            || cand.iter().any(|c| c.len() >= 8 && m.len() >= 8 && mixed(c) && (m.starts_with(c.as_str()) || c.starts_with(m)))
+    };
+    if !models.iter().all(|m| model_found(m)) {
         return 0.0;
     }
     // Zubehör (Hülle für …) ist nicht das Gerät selbst
@@ -113,10 +124,21 @@ pub fn name_match(wanted: &str, candidate: &str) -> f64 {
     if words.is_empty() {
         return 1.0 - penalty;
     }
-    let found = words.iter().filter(|w| cand.iter().any(|c| c == **w || (w.len() >= 5 && c.starts_with(w.as_str())))).count();
+    let found = words
+        .iter()
+        .filter(|w| cand.iter().any(|c| c == **w || (w.len() >= 5 && c.starts_with(w.as_str()))) || (w.len() >= 4 && cand_joined.contains(w.as_str())))
+        .count();
     let ratio = found as f64 / words.len() as f64;
     // Mit Modellnummer reicht ein Teil der Wörter (Händler formulieren Titel unterschiedlich)
     (if models.is_empty() { ratio } else { 0.5 + ratio / 2.0 }) - penalty
+}
+
+/// Modellbezeichnungen in einem Text (Wörter aus Buchstaben und Ziffern, mind. 4 Zeichen).
+pub fn model_tokens(text: &str) -> Vec<String> {
+    name_tokens(text)
+        .into_iter()
+        .filter(|t| t.len() >= 4 && t.chars().any(|c| c.is_ascii_digit()) && t.chars().any(|c| c.is_alphabetic()))
+        .collect()
 }
 
 const ACCESSORY: &[&str] = &[
@@ -175,6 +197,15 @@ mod name_tests {
         assert_eq!(name_match("", "irgendwas"), 0.0);
         assert_eq!(name_match("Apple AirPods Pro 3", "Apple AirPods Pro 2 (2023)"), 0.0);
         assert!(name_match("Sony WH-1000XM5", "Hülle für Sony WH-1000XM5") < NAME_MATCH_MIN);
+        // Echte Titel (Shop-Bericht 28.11.2026): Länderkürzel, Jahr und Größe dürfen fehlen bzw. anders stehen
+        let wanted = "Samsung GQ65S95HFTXZG S95H Vision AI Smart TV (2026) OLED, 65\"";
+        assert!(name_match(wanted, "Samsung GQ65S95HFT (65 Zoll)") >= NAME_MATCH_MIN);
+        assert!(name_match(wanted, "Samsung GQ65S95HFT 163 cm (65\") OLED Vision AI Smart TV graphitschwarz, 4K Ultra HD") >= NAME_MATCH_MIN);
+        assert!(name_match(wanted, "SAMSUNG 65 Zoll OLED 4K S95H Vision AI Smart TV (GQ65S95HFTXZG), Glare Free (2026)") >= NAME_MATCH_MIN);
+        assert_eq!(name_match(wanted, "Samsung GQ-S95HFT"), 0.0); // Variantengruppe ohne Größe
+        assert_eq!(name_match(wanted, "Samsung GQ55S95HFTXZG S95H"), 0.0); // 55 statt 65 Zoll
+        assert_eq!(name_match(wanted, "Samsung GQ65S90H (65 Zoll)"), 0.0);
+        assert_eq!(name_match(wanted, "Samsung OLED S95H 4K 65 Zoll (163 cm), UHD Fernseher"), 0.0); // ohne Modellnummer: nicht sicher
     }
 
     #[test]
