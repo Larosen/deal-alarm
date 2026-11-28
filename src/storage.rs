@@ -44,6 +44,8 @@ pub struct Settings {
     pub idealo_rate_per_min: i64,
     /// MediaMarkt und Saturn (je Domain)
     pub mediamarkt_rate_per_min: i64,
+    /// mydealz-Suche (eine Anfrage je Gerät und Prüfung)
+    pub mydealz_rate_per_min: i64,
     /// ältere Filialpreise zählen nicht mehr für den Dealalarm
     pub price_max_age_hours: i64,
 }
@@ -70,6 +72,7 @@ impl Default for Settings {
             amazon_rate_per_min: 4,
             idealo_rate_per_min: 10,
             mediamarkt_rate_per_min: 10,
+            mydealz_rate_per_min: 6,
             price_max_age_hours: 24,
         }
     }
@@ -192,7 +195,7 @@ pub fn migrate(mut state: Value) -> Value {
         }
         // Später hinzugekommene Quellen bei bestehenden Geräten einmalig einschalten (danach zählt die Auswahl des Nutzers)
         if let Some(sources) = obj.get_mut("sources").and_then(Value::as_object_mut) {
-            for id in ["idealo", "mediamarkt", "saturn"] {
+            for id in ["idealo", "mediamarkt", "saturn", "mydealz"] {
                 sources.entry(id).or_insert_with(|| json!({"enabled": true, "query": "", "options": {}}));
             }
         }

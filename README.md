@@ -39,7 +39,10 @@ und durchsucht auf Wunsch alle expert-Filialen inkl. Direktabzug/Aktionspreis un
   über EAN/Gerätename.
 - **MediaMarkt** und **Saturn**: Onlinepreis, Produkt-URL oder automatisch über EAN/Gerätename (EAN wird auf der
   Produktseite geprüft). Preise je Markt bietet nur eine Schnittstelle, die ohne Anmeldung gesperrt ist.
-- Bei bestehenden Geräten werden idealo, MediaMarkt und Saturn beim ersten Start einmalig eingeschaltet.
+- **mydealz**: Stichwortsuche nach dem Gerät (Marke + Serie, z. B. „Samsung S95H“, oder eigener Suchbegriff). Es zählen
+  nur aktuelle, nicht abgelaufene Deals, deren Titel zum Gerät passt (Modell-/Serienbezeichnung, keine andere
+  Bildschirmgröße); optional mit Mindest-Temperatur. Tabelle „Alle Deals“.
+- Bei bestehenden Geräten werden idealo, MediaMarkt, Saturn und mydealz beim ersten Start einmalig eingeschaltet.
 - **Amazon** (amazon.de): ASIN, Produkt-URL oder Suche über die EAN, sonst über den Namen
   - **Amazon Warehouse** (Gebrauchtware) mit Mindestzustand (*Wie neu*, *Sehr gut*, *Gut*, *Akzeptabel*)
   - Neuware von Amazon, optional auch von Drittanbietern

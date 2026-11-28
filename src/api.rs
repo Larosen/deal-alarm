@@ -491,7 +491,7 @@ async fn locate_article(State(app): State<AppState>, Query(q): Query<HashMap<Str
     let skip: Vec<String> = get("skip").split(',').map(|s| s.trim().to_string()).filter(|s| !s.is_empty()).collect();
     let watch = Watch { name, ean, ..Default::default() };
     let settings = app.storage.get_settings();
-    let jobs = shops::all().iter().filter(|s| !skip.iter().any(|x| x == s.id())).map(|source| {
+    let jobs = shops::all().iter().filter(|s| s.id() != "mydealz" && !skip.iter().any(|x| x == s.id())).map(|source| {
         let (source, watch, settings) = (source.clone(), watch.clone(), settings.clone());
         async move {
             let result = tokio::time::timeout(LOCATE_TIMEOUT, source.locate(&watch, &settings))
@@ -583,12 +583,12 @@ mod tests {
         assert_eq!(status, 200);
         assert_eq!(state["watches"], json!([]));
         assert_eq!(state["settings"]["interval_minutes"], 120);
-        assert_eq!(state["activity"].as_object().unwrap().keys().cloned().collect::<Vec<_>>(), ["amazon", "euronics", "expert", "idealo", "mediamarkt", "saturn"]);
+        assert_eq!(state["activity"].as_object().unwrap().keys().cloned().collect::<Vec<_>>(), ["amazon", "euronics", "expert", "idealo", "mediamarkt", "mydealz", "saturn"]);
 
         let (status, sources) = call(&h.app, "GET", "/api/sources", None, None).await;
         assert_eq!(status, 200);
         let ids: Vec<_> = sources.as_array().unwrap().iter().map(|s| s["id"].as_str().unwrap()).collect();
-        assert_eq!(ids, ["expert", "euronics", "amazon", "mediamarkt", "saturn", "idealo"]);
+        assert_eq!(ids, ["expert", "euronics", "amazon", "mediamarkt", "saturn", "idealo", "mydealz"]);
         assert!(sources[2]["options"].as_array().unwrap().iter().any(|o| o["key"] == "warehouse_min_condition" && o["kind"] == "select"));
 
         // Validierung
